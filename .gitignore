@@ -1,0 +1,6 @@
+node_modules/
+cdn/
+temp/
+registry.json
+.DS_Store
+*.log

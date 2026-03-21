@@ -1,0 +1,17 @@
+{
+  "name": "simple-cdn",
+  "version": "1.0.0",
+  "description": "Premium Module Registry & CDN for SuperApps",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "cors": "^2.8.6",
+    "express": "^4.22.1",
+    "fs-extra": "^11.3.4",
+    "multer": "^1.4.5-lts.1"
+  }
+}
