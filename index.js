@@ -44,21 +44,24 @@ const saveRegistry = (data) => fs.writeJsonSync(REGISTRY_FILE, data, { spaces: 2
  */
 app.get('/assets', (req, res) => {
   const registry = getRegistry();
-  const activeAssets = registry.map(a => {
-    let url = '';
-    if (a.is_dev_mode && a.dev_url) {
-      url = a.dev_url;
-    } else if (a.active_version) {
-      url = `${req.protocol}://${req.get('host')}/cdn/${a.id}/${a.active_version}/index.bundle`;
-    }
-    
-    return {
-      id: a.id,
-      name: a.name,
-      url: url,
-      is_dev_mode: a.is_dev_mode || false
-    };
-  }).filter(a => a.url);
+  const activeAssets = registry
+    .filter(a => (a.is_dev_mode && a.dev_url) || a.active_version) // FILTER: Must have dev_url or active_version
+    .map(a => {
+      let url = '';
+      if (a.is_dev_mode && a.dev_url) {
+        url = a.dev_url;
+      } else if (a.active_version) {
+        url = `${req.protocol}://${req.get('host')}/cdn/${a.id}/${a.active_version}/index.bundle`;
+      }
+      
+      return {
+        id: a.id,
+        name: a.name,
+        url: url,
+        is_dev_mode: a.is_dev_mode || false
+      };
+    })
+    .filter(a => a.url);
   
   res.json(activeAssets);
 });
@@ -109,6 +112,29 @@ app.put('/api/admin/assets/:id', (req, res) => {
   registry[index] = { ...registry[index], ...req.body };
   saveRegistry(registry);
   res.json(registry[index]);
+});
+
+/**
+ * ADMIN API: Delete Asset
+ */
+app.delete('/api/admin/assets/:id', (req, res) => {
+  const { id } = req.params;
+  const registry = getRegistry();
+  const filteredRegistry = registry.filter(a => a.id !== id);
+  
+  if (registry.length === filteredRegistry.length) {
+    return res.status(404).json({ error: 'Asset not found' });
+  }
+
+  saveRegistry(filteredRegistry);
+  
+  // Optionally delete files
+  const assetDir = path.join(CDN_DIR, id);
+  if (fs.existsSync(assetDir)) {
+    fs.removeSync(assetDir);
+  }
+
+  res.status(204).end();
 });
 
 /**
