@@ -24,7 +24,7 @@
       </div>
       <div class="flex items-center gap-6 text-sm font-medium">
         <a href="/" class="text-white hover:text-indigo-400 transition-colors">Dashboard</a>
-        <a href="/assets" target="_blank" class="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
+        <a href="/modules" target="_blank" class="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
           Consumer API <i data-lucide="external-link" class="w-4 h-4"></i>
         </a>
       </div>
@@ -88,7 +88,7 @@
     async function fetchModules() {
       const grid = document.getElementById('modules-grid');
       try {
-        const res = await fetch('/api/admin/assets');
+        const res = await fetch('/api/admin/modules');
         const modules = await res.json();
         
         if (modules.length === 0) {
@@ -139,7 +139,7 @@
       const id = document.getElementById('mod-id').value;
       const name = document.getElementById('mod-name').value;
       
-      const res = await fetch('/api/admin/assets', {
+      const res = await fetch('/api/admin/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, name })

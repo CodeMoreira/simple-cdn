@@ -36,7 +36,7 @@
     async function loadModule() {
       const main = document.getElementById('module-content');
       try {
-        const res = await fetch('/api/admin/assets');
+        const res = await fetch('/api/admin/modules');
         const modules = await res.json();
         const m = modules.find(x => x.id === modId);
         
@@ -132,7 +132,7 @@
     }
 
     async function toggleDev(current) {
-      await fetch(`/api/admin/assets/${modId}`, {
+      await fetch(`/api/admin/modules/${modId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_dev_mode: !current })
@@ -142,7 +142,7 @@
 
     async function saveDevUrl() {
       const url = document.getElementById('dev-url').value;
-      await fetch(`/api/admin/assets/${modId}`, {
+      await fetch(`/api/admin/modules/${modId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dev_url: url })
@@ -151,7 +151,7 @@
     }
 
     async function setActive(version) {
-      await fetch(`/api/admin/assets/${modId}`, {
+      await fetch(`/api/admin/modules/${modId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active_version: version })
@@ -171,7 +171,7 @@
       formData.append('version', version);
 
       try {
-        const res = await fetch(`/api/admin/assets/${modId}/versions`, {
+        const res = await fetch(`/api/admin/modules/${modId}/versions`, {
           method: 'POST',
           body: formData
         });
@@ -189,7 +189,7 @@
     async function deleteModule() {
       if (!confirm(`Are you sure you want to delete the module "${modId}"? This will remove the registry entry AND all files on the CDN. This cannot be undone.`)) return;
       
-      const res = await fetch(`/api/admin/assets/${modId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/modules/${modId}`, { method: 'DELETE' });
       if (res.ok) {
         window.location.href = '/';
       } else {

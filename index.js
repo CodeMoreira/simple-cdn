@@ -39,10 +39,10 @@ const getRegistry = () => fs.readJsonSync(REGISTRY_FILE);
 const saveRegistry = (data) => fs.writeJsonSync(REGISTRY_FILE, data, { spaces: 2 });
 
 /** 
- * CONSUMER API: Get Active Assets
- * Consumers call this to know which assets to load.
+ * CONSUMER API: Get Active Modules
+ * Consumers call this to know which modules to load.
  */
-app.get('/assets', (req, res) => {
+app.get('/modules', (req, res) => {
   const registry = getRegistry();
   const activeAssets = registry
     .filter(a => (a.is_dev_mode && a.dev_url) || a.active_version) // FILTER: Must have dev_url or active_version
@@ -66,22 +66,19 @@ app.get('/assets', (req, res) => {
   res.json(activeAssets);
 });
 
-/**
- * ADMIN API: List Modules
- */
-app.get('/api/admin/assets', (req, res) => {
+app.get('/api/admin/modules', (req, res) => {
   res.json(getRegistry());
 });
 
 /**
- * ADMIN API: Create Asset
+ * ADMIN API: Create Module
  */
-app.post('/api/admin/assets', (req, res) => {
+app.post('/api/admin/modules', (req, res) => {
   const { id, name, description } = req.body;
   const registry = getRegistry();
   
   if (registry.find(a => a.id === id)) {
-    return res.status(400).json({ error: 'Asset already exists' });
+    return res.status(400).json({ error: 'Module already exists' });
   }
 
   const newAsset = {
@@ -100,9 +97,9 @@ app.post('/api/admin/assets', (req, res) => {
 });
 
 /**
- * ADMIN API: Update Asset (Dev Mode toggles)
+ * ADMIN API: Update Module (Dev Mode toggles)
  */
-app.put('/api/admin/assets/:id', (req, res) => {
+app.put('/api/admin/modules/:id', (req, res) => {
   const { id } = req.params;
   const registry = getRegistry();
   const index = registry.findIndex(a => a.id === id);
@@ -115,15 +112,15 @@ app.put('/api/admin/assets/:id', (req, res) => {
 });
 
 /**
- * ADMIN API: Delete Asset
+ * ADMIN API: Delete Module
  */
-app.delete('/api/admin/assets/:id', (req, res) => {
+app.delete('/api/admin/modules/:id', (req, res) => {
   const { id } = req.params;
   const registry = getRegistry();
   const filteredRegistry = registry.filter(a => a.id !== id);
   
   if (registry.length === filteredRegistry.length) {
-    return res.status(404).json({ error: 'Asset not found' });
+    return res.status(404).json({ error: 'Module not found' });
   }
 
   saveRegistry(filteredRegistry);
@@ -140,7 +137,7 @@ app.delete('/api/admin/assets/:id', (req, res) => {
 /**
  * ADMIN API: Upload Bundle Version
  */
-app.post('/api/admin/assets/:id/versions', upload.single('bundle'), (req, res) => {
+app.post('/api/admin/modules/:id/versions', upload.single('bundle'), (req, res) => {
   const { id } = req.params;
   const { version } = req.body;
   
