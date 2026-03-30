@@ -30,6 +30,9 @@
   </main>
 
   <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const modId = urlParams.get('id');
+
     const formatDate = (date) => {
       if (!date) return 'Never';
       const d = new Date(date);
