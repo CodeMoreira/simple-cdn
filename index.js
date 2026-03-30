@@ -44,26 +44,27 @@ const saveRegistry = (data) => fs.writeJsonSync(REGISTRY_FILE, data, { spaces: 2
  */
 app.get('/modules', (req, res) => {
   const registry = getRegistry();
-  const activeAssets = registry
-    .filter(a => (a.is_dev_mode && a.dev_url) || a.active_version) // FILTER: Must have dev_url or active_version
-    .map(a => {
-      let url = '';
-      if (a.is_dev_mode && a.dev_url) {
-        url = a.dev_url;
-      } else if (a.active_version) {
-        url = `${req.protocol}://${req.get('host')}/cdn/${a.id}/${a.active_version}/index.bundle`;
-      }
-      
-      return {
-        id: a.id,
-        name: a.name,
-        url: url,
-        is_dev_mode: a.is_dev_mode || false
-      };
-    })
-    .filter(a => a.url);
+  const host = `${req.protocol}://${req.get('host')}`;
   
-  res.json(activeAssets);
+  const modules = registry.map(a => {
+    const devPath = path.join(CDN_DIR, a.id, 'dev', 'index.bundle');
+    const hasDev = fs.existsSync(devPath);
+
+    return {
+      id: a.id,
+      name: a.name,
+      // Production URL (latest version)
+      active_version_url: a.active_version 
+        ? `${host}/cdn/${a.id}/${a.active_version}/index.bundle`
+        : null,
+      // Development URL (Cloud Dev slot)
+      dev_url: hasDev 
+        ? `${host}/cdn/${a.id}/dev/index.bundle`
+        : null
+    };
+  });
+  
+  res.json(modules);
 });
 
 app.get('/api/admin/modules', (req, res) => {
@@ -132,6 +133,43 @@ app.delete('/api/admin/modules/:id', (req, res) => {
   }
 
   res.status(204).end();
+});
+
+/**
+ * ADMIN API: Upload Development Bundle (Cloud-Dev Sync)
+ * Overwrites the single development slot for the module.
+ */
+app.post('/api/admin/modules/:id/dev', upload.single('bundle'), (req, res) => {
+  const { id } = req.params;
+  
+  if (!req.file) {
+    return res.status(400).json({ error: 'Missing bundle file' });
+  }
+
+  const registry = getRegistry();
+  const index = registry.findIndex(a => a.id === id);
+  if (index === -1) return res.status(404).json({ error: 'Module not found' });
+
+  try {
+    const devPath = path.join(CDN_DIR, id, 'dev');
+    
+    // ATOMIC REPLACE: Clean previous dev files
+    if (fs.existsSync(devPath)) {
+      fs.removeSync(devPath);
+    }
+    fs.ensureDirSync(devPath);
+    
+    const zip = new AdmZip(req.file.path);
+    zip.extractAllTo(devPath, true);
+    
+    // Cleanup temp file
+    fs.unlinkSync(req.file.path);
+    
+    console.log(`☁️  Dev-Cloud Sync: ${id} updated.`);
+    res.json({ message: 'Dev bundle updated', id });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to process dev bundle: ' + err.message });
+  }
 });
 
 /**

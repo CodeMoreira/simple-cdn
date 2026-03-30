@@ -2,10 +2,9 @@
 
 A premium, standalone CDN and Asset Registry for remote bundles and static content.
 
-## Features
-- **Generic Backend**: Node.js + Express with lightweight JSON persistence.
+- **Registry Dual-Track**: Supports both versioned Production bundles and ephemeral Cloud-Dev bundles.
 - **Premium Admin UI**: Stunning dashboard with Glassmorphism and Lucide icons.
-- **Micro-Frontend Ready**: Built-in support for remote bundle hosting and dev-mode overrides.
+- **Zephyr-Style Sync**: Atomic "Dev-Push" endpoint for rapid cloud-based previewing.
 - **Automated Workflows**: Simple API for uploading, versioning, and serving assets.
 
 ## Getting Started
@@ -22,10 +21,11 @@ A premium, standalone CDN and Asset Registry for remote bundles and static conte
    The registry will be available at `http://localhost:3000`.
 
 3. **Consume Assets**:
-   Consumer applications can fetch `http://localhost:3000/assets` to retrieve the active registry.
+   Consumer applications (SuperApp Hosts) fetch `http://localhost:3000/modules` to retrieve the registry with both `active_version_url` and `dev_url`.
 
 ## Admin API
-- `GET /api/admin/assets`: List all registered assets.
-- `POST /api/admin/assets`: Register a new asset.
-- `PUT /api/admin/assets/:id`: Update asset configuration.
-- `POST /api/admin/assets/:id/versions`: Upload a new version.
+- `GET /api/admin/modules`: List all registered modules.
+- `POST /api/admin/modules`: Register a new module.
+- `PUT /api/admin/modules/:id`: Update module configuration.
+- `POST /api/admin/modules/:id/versions`: Upload a production version.
+- `POST /api/admin/modules/:id/dev`: Upload a Cloud-Dev sync bundle (Overwrites dev track).
