@@ -116,8 +116,6 @@ app.post('/api/admin/modules', (req, res) => {
     name,
     description,
     active_version: null,
-    is_dev_mode: false,
-    dev_url: null,
     versions: []
   };
 
@@ -127,7 +125,7 @@ app.post('/api/admin/modules', (req, res) => {
 });
 
 /**
- * ADMIN API: Update Module (Dev Mode toggles)
+ * ADMIN API: Update Module
  */
 app.put('/api/admin/modules/:id', (req, res) => {
   const { id } = req.params;
@@ -136,7 +134,11 @@ app.put('/api/admin/modules/:id', (req, res) => {
   
   if (index === -1) return res.status(404).json({ error: 'Not found' });
 
-  registry[index] = { ...registry[index], ...req.body };
+  const { name, active_version, description } = req.body;
+  if (name !== undefined) registry[index].name = name;
+  if (active_version !== undefined) registry[index].active_version = active_version;
+  if (description !== undefined) registry[index].description = description;
+
   saveRegistry(registry);
   res.json(registry[index]);
 });

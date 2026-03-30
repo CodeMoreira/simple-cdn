@@ -120,6 +120,12 @@
         return;
       }
 
+      const formatDate = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      };
+
       grid.innerHTML = modules.map(m => {
         const isLive = !!m.active_version;
         const isDev = !!m.has_dev_bundle;
@@ -135,8 +141,16 @@
         return `
           <div class="glass p-8 rounded-[2.5rem] hover:bg-white/10 transition-all group relative overflow-hidden">
              <div class="absolute top-0 right-0 p-8 flex flex-col items-end gap-2 text-right">
-                <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${statusClass}">${statusLabel}</span>
-                ${isDev ? '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-cyan-500/10 text-cyan-400 border-cyan-500/20">Cloud Dev</span>' : ''}
+                <div class="flex flex-col items-end">
+                  <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${statusClass}">${statusLabel}</span>
+                  ${isLive ? `<span class="text-[9px] text-slate-500 mt-1 uppercase font-semibold">${formatDate(m.last_prod_update)}</span>` : ''}
+                </div>
+                ${isDev ? `
+                  <div class="flex flex-col items-end">
+                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-cyan-500/10 text-cyan-400 border-cyan-500/20">Cloud Dev</span>
+                    <span class="text-[9px] text-cyan-500/60 mt-1 uppercase font-semibold">${formatDate(m.last_dev_update)}</span>
+                  </div>
+                ` : ''}
              </div>
              <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <i data-lucide="package" class="text-indigo-400"></i>
