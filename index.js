@@ -53,11 +53,10 @@ app.get('/modules', (req, res) => {
     return {
       id: a.id,
       name: a.name,
-      // Production URL (latest version)
+      active_version: a.active_version,
       active_version_url: a.active_version 
         ? `${host}/cdn/${a.id}/${a.active_version}/index.bundle`
         : null,
-      // Development URL (Cloud Dev slot)
       dev_url: hasDev 
         ? `${host}/cdn/${a.id}/dev/index.bundle`
         : null
@@ -68,12 +67,34 @@ app.get('/modules', (req, res) => {
 });
 
 app.get('/api/admin/modules', (req, res) => {
+  const host = req.get('host');
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const baseUrl = `${protocol}://${host}`;
+  
   const registry = getRegistry();
   const modules = registry.map(a => {
     const devPath = path.join(CDN_DIR, a.id, 'dev', 'index.bundle');
+    const hasDev = fs.existsSync(devPath);
+    
+    let last_dev_update = null;
+    if (hasDev) {
+      last_dev_update = fs.statSync(devPath).mtime;
+    }
+
+    let last_prod_update = null;
+    if (a.active_version) {
+      const prodPath = path.join(CDN_DIR, a.id, a.active_version, 'index.bundle');
+      if (fs.existsSync(prodPath)) {
+        last_prod_update = fs.statSync(prodPath).mtime;
+      }
+    }
+
     return {
       ...a,
-      has_dev_bundle: fs.existsSync(devPath)
+      has_dev_bundle: hasDev,
+      dev_url: hasDev ? `${baseUrl}/cdn/${a.id}/dev/index.bundle` : null,
+      last_dev_update,
+      last_prod_update
     };
   });
   res.json(modules);
