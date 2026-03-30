@@ -103,13 +103,22 @@
         }
 
         grid.innerHTML = modules.map(m => {
-          const status = m.is_dev_mode ? 'Dev Mode' : (m.active_version ? 'Live' : 'No Release');
-          const statusClass = m.is_dev_mode ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : (m.active_version ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-slate-500/10 text-slate-500 border-slate-500/20');
+          const isLive = !!m.active_version;
+          const isDev = !!m.has_dev_bundle;
           
+          let statusLabel = 'No Release';
+          let statusClass = 'bg-slate-500/10 text-slate-500 border-slate-500/20';
+          
+          if (isLive) {
+            statusLabel = 'Live';
+            statusClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+          }
+
           return `
             <div class="glass p-8 rounded-[2.5rem] hover:bg-white/10 transition-all group relative overflow-hidden">
-               <div class="absolute top-0 right-0 p-8">
-                  <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${statusClass}">${status}</span>
+               <div class="absolute top-0 right-0 p-8 flex flex-col items-end gap-2 text-right">
+                  <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${statusClass}">${statusLabel}</span>
+                  ${isDev ? '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-cyan-500/10 text-cyan-400 border-cyan-500/20">Cloud Dev</span>' : ''}
                </div>
                <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <i data-lucide="package" class="text-indigo-400"></i>

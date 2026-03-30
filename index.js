@@ -68,7 +68,15 @@ app.get('/modules', (req, res) => {
 });
 
 app.get('/api/admin/modules', (req, res) => {
-  res.json(getRegistry());
+  const registry = getRegistry();
+  const modules = registry.map(a => {
+    const devPath = path.join(CDN_DIR, a.id, 'dev', 'index.bundle');
+    return {
+      ...a,
+      has_dev_bundle: fs.existsSync(devPath)
+    };
+  });
+  res.json(modules);
 });
 
 /**
