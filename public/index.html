@@ -32,14 +32,23 @@
   </nav>
 
   <main class="container mx-auto mt-12 px-6">
-    <div class="flex justify-between items-end mb-10">
-      <div>
+    <div class="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 mb-10">
+      <div class="flex-1">
         <h2 class="text-4xl font-bold mb-2">Assets</h2>
         <p class="text-slate-400">Manage and deploy your remote bundles and static assets.</p>
       </div>
-      <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center gap-2 font-semibold">
-        <i data-lucide="plus" class="w-5 h-5"></i> Create Asset
-      </button>
+      
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <div class="relative flex-1 md:w-80">
+          <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
+          <input type="text" id="search-input" placeholder="Search modules..." 
+                 class="w-full bg-white/5 border border-white/10 rounded-2xl pl-14 pr-6 py-3.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all placeholder:text-slate-600 outline-none">
+        </div>
+        
+        <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3.5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center gap-2 font-semibold whitespace-nowrap">
+          <i data-lucide="plus" class="w-5 h-5"></i> Create Asset
+        </button>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="modules-grid">
@@ -85,63 +94,78 @@
     function openModal() { document.getElementById('modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
+    let allModules = [];
+
     async function fetchModules() {
-      const grid = document.getElementById('modules-grid');
       try {
         const res = await fetch('/api/admin/modules');
-        const modules = await res.json();
-        
-        if (modules.length === 0) {
-          grid.innerHTML = `
-            <div class="col-span-full py-20 text-center glass rounded-3xl border-dashed">
-              <i data-lucide="box" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
-              <p class="text-slate-500 font-medium">No assets found. Start by creating your first bundle.</p>
-            </div>
-          `;
-          lucide.createIcons();
-          return;
-        }
-
-        grid.innerHTML = modules.map(m => {
-          const isLive = !!m.active_version;
-          const isDev = !!m.has_dev_bundle;
-          
-          let statusLabel = 'No Release';
-          let statusClass = 'bg-slate-500/10 text-slate-500 border-slate-500/20';
-          
-          if (isLive) {
-            statusLabel = 'Live';
-            statusClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-          }
-
-          return `
-            <div class="glass p-8 rounded-[2.5rem] hover:bg-white/10 transition-all group relative overflow-hidden">
-               <div class="absolute top-0 right-0 p-8 flex flex-col items-end gap-2 text-right">
-                  <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${statusClass}">${statusLabel}</span>
-                  ${isDev ? '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-cyan-500/10 text-cyan-400 border-cyan-500/20">Cloud Dev</span>' : ''}
-               </div>
-               <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <i data-lucide="package" class="text-indigo-400"></i>
-               </div>
-               <h3 class="text-2xl font-bold mb-2 text-white">${m.name}</h3>
-               <p class="text-slate-500 font-mono text-xs mb-6">${m.id}</p>
-               
-               <div class="flex items-center justify-between mt-8">
-                  <div class="text-xs text-slate-400">
-                    Version: <span class="font-bold text-slate-200">${m.active_version || 'None'}</span>
-                  </div>
-                  <a href="/module.html?id=${m.id}" class="w-10 h-10 glass rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
-                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                  </a>
-               </div>
-            </div>
-          `;
-        }).join('');
-        lucide.createIcons();
+        allModules = await res.json();
+        renderModules(allModules);
       } catch (err) {
-        grid.innerHTML = `<p class="col-span-full text-center text-red-400">Error connecting to registry backend.</p>`;
+        document.getElementById('modules-grid').innerHTML = `<p class="col-span-full text-center text-red-400">Error connecting to registry backend.</p>`;
       }
     }
+
+    function renderModules(modules) {
+      const grid = document.getElementById('modules-grid');
+      
+      if (modules.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full py-20 text-center glass rounded-3xl border-dashed">
+            <i data-lucide="box" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
+            <p class="text-slate-500 font-medium">No assets found matching your criteria.</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      grid.innerHTML = modules.map(m => {
+        const isLive = !!m.active_version;
+        const isDev = !!m.has_dev_bundle;
+        
+        let statusLabel = 'No Release';
+        let statusClass = 'bg-slate-500/10 text-slate-500 border-slate-500/20';
+        
+        if (isLive) {
+          statusLabel = 'Live';
+          statusClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+        }
+
+        return `
+          <div class="glass p-8 rounded-[2.5rem] hover:bg-white/10 transition-all group relative overflow-hidden">
+             <div class="absolute top-0 right-0 p-8 flex flex-col items-end gap-2 text-right">
+                <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${statusClass}">${statusLabel}</span>
+                ${isDev ? '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-cyan-500/10 text-cyan-400 border-cyan-500/20">Cloud Dev</span>' : ''}
+             </div>
+             <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <i data-lucide="package" class="text-indigo-400"></i>
+             </div>
+             <h3 class="text-2xl font-bold mb-2 text-white">${m.name}</h3>
+             <p class="text-slate-500 font-mono text-xs mb-6">${m.id}</p>
+             
+             <div class="flex items-center justify-between mt-8">
+                <div class="text-xs text-slate-400">
+                  Version: <span class="font-bold text-slate-200">${m.active_version || 'None'}</span>
+                </div>
+                <a href="/module.html?id=${m.id}" class="w-10 h-10 glass rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
+                  <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </a>
+             </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = allModules.filter(m => 
+        m.name.toLowerCase().includes(term) || 
+        m.id.toLowerCase().includes(term)
+      );
+      renderModules(filtered);
+    });
 
     document.getElementById('create-form').addEventListener('submit', async (e) => {
       e.preventDefault();
