@@ -3,93 +3,152 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flux Registry | Assets</title>
+  <title>Flux Registry | Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/auth.js"></script>
+  <script src="/ui.js"></script>
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    .gradient-bg { background: radial-gradient(circle at top right, #4f46e5, #0f172a 40%), #0f172a; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; }
+    
+    .surface { background-color: #0f172a; border: 1px solid #1e293b; }
+    .surface-elevated { background-color: #1e293b; border: 1px solid #334155; }
+    
+    .input-field { 
+      width: 100%; background-color: #020617; border: 1px solid #1e293b; border-radius: 0.5rem; 
+      padding: 0.625rem 0.875rem; color: #f8fafc; font-size: 0.875rem; transition: all 150ms ease-out; 
+    }
+    .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); outline: none; }
+    .input-field::placeholder { color: #64748b; }
+
+    /* Module Grid Animations */
+    .module-card { transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease; }
+    .module-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border-color: #334155; }
   </style>
 </head>
-<body class="gradient-bg text-slate-100 min-h-screen pb-20">
-  <nav class="p-6">
-    <div class="container mx-auto flex justify-between items-center glass rounded-3xl px-8 py-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-          <i data-lucide="layers" class="text-white"></i>
-        </div>
-        <span class="text-xl font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></span>
-      </div>
-      <div class="flex items-center gap-6 text-sm font-medium">
-        <a href="/" class="text-white hover:text-indigo-400 transition-colors">Dashboard</a>
-        <a href="/modules" target="_blank" class="text-slate-400 hover:text-white transition-colors flex items-center gap-2">
-          Consumer API <i data-lucide="external-link" class="w-4 h-4"></i>
-        </a>
-      </div>
-    </div>
-  </nav>
+<body class="flex h-screen overflow-hidden">
 
-  <main class="container mx-auto mt-12 px-6">
-    <div class="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 mb-10">
-      <div class="flex-1">
-        <h2 class="text-4xl font-bold mb-2">Assets</h2>
-        <p class="text-slate-400">Manage and deploy your remote bundles and static assets.</p>
+  <!-- Sidebar -->
+  <aside class="w-64 surface h-full flex flex-col flex-shrink-0 z-10">
+    <div class="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+        <i data-lucide="layers" class="text-white w-5 h-5"></i>
       </div>
+      <span class="text-lg font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></span>
+    </div>
+    
+    <div class="p-4 flex-1 flex flex-col gap-2">
+      <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Menu</div>
       
-      <div class="flex items-center gap-4 w-full md:w-auto">
-        <div class="relative flex-1 md:w-80">
-          <i data-lucide="search" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 w-5 h-5"></i>
-          <input type="text" id="search-input" placeholder="Search modules..." 
-                 class="w-full bg-white/5 border border-white/10 rounded-2xl pl-14 pr-6 py-3.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all placeholder:text-slate-600 outline-none">
-        </div>
-        
-        <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3.5 rounded-2xl shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center gap-2 font-semibold whitespace-nowrap">
-          <i data-lucide="plus" class="w-5 h-5"></i> Create Asset
-        </button>
-      </div>
+      <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-400 font-medium text-sm">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+      </a>
+      
+      <a href="/modules" target="_blank" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="server" class="w-4 h-4"></i> Consumer API
+      </a>
+
+      <a href="/docs.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="book-open" class="w-4 h-4"></i> API Docs
+      </a>
+
+      <a id="admin-link" href="/admin.html" class="hidden flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="shield" class="w-4 h-4"></i> Admin Center
+      </a>
+
+      <a href="/profile.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="user" class="w-4 h-4"></i> My Profile
+      </a>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="modules-grid">
-      <!-- Skeleton or Loading -->
-      <div class="py-20 text-center col-span-full text-slate-500">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mb-4"></div>
-        <p>Loading registry...</p>
+    <div class="p-4 border-t border-slate-800">
+      <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 h-full overflow-y-auto bg-slate-950 flex flex-col">
+    <header class="h-16 border-b border-slate-800 flex items-center px-8 bg-slate-950/80 sticky top-0 z-10 backdrop-blur">
+      <h1 class="text-xl font-bold">Assets Overview</h1>
+    </header>
+
+    <div class="p-8 max-w-7xl mx-auto w-full">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+        <div>
+          <h2 class="text-3xl font-bold">Assets</h2>
+          <p class="text-slate-400 mt-2 text-sm">Manage and deploy your remote bundles and static assets.</p>
+        </div>
+
+        <div class="flex items-center gap-4">
+          <div class="relative w-full sm:w-64">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+            <input type="text" id="search-input" class="input-field pl-10" placeholder="Search modules..." onkeyup="filterModules()">
+          </div>
+          <button onclick="openModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 flex-shrink-0 shadow-lg shadow-indigo-600/20">
+            <i data-lucide="plus" class="w-4 h-4"></i> Create Asset
+          </button>
+        </div>
       </div>
+
+      <!-- Modules Grid -->
+      <div id="modules-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Loaded via JS -->
+      </div>
+
     </div>
   </main>
 
   <!-- Create Modal -->
-  <div id="modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center hidden z-50 p-6">
-    <div class="glass p-10 rounded-[2.5rem] w-full max-w-lg animate-in fade-in zoom-in duration-300">
-      <div class="flex justify-between items-start mb-8">
+  <div id="modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-6 transition-opacity">
+    <div class="surface p-8 w-full max-w-md rounded-xl shadow-2xl">
+      <div class="flex justify-between items-start mb-6">
         <div>
-          <h3 class="text-2xl font-bold mb-1">New Asset</h3>
-          <p class="text-slate-400 text-sm">Register a new bundle in the registry.</p>
+          <h3 class="text-xl font-bold">Create New Asset</h3>
+          <p class="text-sm text-slate-400 mt-1">Register a new module namespace.</p>
         </div>
-        <button onclick="closeModal()" class="p-2 hover:bg-white/10 rounded-full transition-colors"><i data-lucide="x"></i></button>
+        <button onclick="closeModal()" class="text-slate-500 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
-      
-      <form id="create-form" class="space-y-6">
+
+      <form id="create-form" class="space-y-4">
         <div>
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Asset Identifier</label>
-          <input type="text" id="mod-id" required placeholder="e.g. core-bundle" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all placeholder:text-slate-600">
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Module ID</label>
+          <input type="text" id="mod-id" class="input-field font-mono" placeholder="e.g. auth-remote" required pattern="[a-zA-Z0-9_\-]+">
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Display Name</label>
-          <input type="text" id="mod-name" required placeholder="e.g. Sales Analytics" class="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all placeholder:text-slate-600">
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Display Name</label>
+          <input type="text" id="mod-name" class="input-field" placeholder="e.g. Authentication UI" required>
         </div>
-        <div class="flex justify-end gap-3 mt-8">
-          <button type="button" onclick="closeModal()" class="px-8 py-4 rounded-2xl font-semibold hover:bg-white/5 transition-colors">Cancel</button>
-          <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-4 rounded-2xl shadow-lg shadow-indigo-600/20 font-bold transition-all active:scale-95">Register</button>
+        <div class="flex gap-3 pt-4">
+          <button type="button" onclick="closeModal()" class="flex-1 py-2.5 rounded-lg font-semibold border border-slate-700 hover:bg-slate-800 transition-colors">Cancel</button>
+          <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-indigo-600/20">Create</button>
         </div>
       </form>
     </div>
   </div>
 
   <script>
+    if (!Auth.requireAuth()) { throw new Error('Redirecting to login'); }
     lucide.createIcons();
+
+    const _currentUser = Auth.getUser();
+    if (_currentUser?.role === 'admin') {
+      document.getElementById('admin-link').classList.remove('hidden');
+    }
+    if (_currentUser?.role === 'viewer') {
+      const btn = document.querySelector('button[onclick="openModal()"]');
+      if (btn) btn.classList.add('hidden');
+    }
+
+    function handleLogout() {
+      Auth.clear();
+      window.location.href = '/login.html';
+    }
 
     function openModal() { document.getElementById('modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
@@ -98,21 +157,28 @@
 
     async function fetchModules() {
       try {
-        const res = await fetch('/api/admin/modules');
+        const res = await Auth.fetch('/api/admin/modules');
+        if (res.status === 401 || res.status === 403) { Auth.handleUnauthorized(); return; }
         allModules = await res.json();
         renderModules(allModules);
       } catch (err) {
-        document.getElementById('modules-grid').innerHTML = `<p class="col-span-full text-center text-red-400">Error connecting to registry backend.</p>`;
+        document.getElementById('modules-grid').innerHTML = `<p class="col-span-full text-center text-red-500 bg-red-500/10 p-4 rounded-xl border border-red-500/20">Error connecting to registry backend.</p>`;
       }
     }
 
-    function renderModules(modules) {
+    function filterModules() {
+      const v = document.getElementById('search-input').value.toLowerCase();
+      const filtered = allModules.filter(m => m.name.toLowerCase().includes(v) || m.id.toLowerCase().includes(v));
+      renderModules(filtered);
+    }
+
+    function renderModules(list) {
       const grid = document.getElementById('modules-grid');
       
-      if (modules.length === 0) {
+      if (!list.length) {
         grid.innerHTML = `
-          <div class="col-span-full py-20 text-center glass rounded-3xl border-dashed">
-            <i data-lucide="box" class="w-12 h-12 text-slate-700 mx-auto mb-4"></i>
+          <div class="col-span-full py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-[2rem]">
+            <i data-lucide="box" class="w-12 h-12 text-slate-600 mb-4"></i>
             <p class="text-slate-500 font-medium">No assets found matching your criteria.</p>
           </div>
         `;
@@ -120,85 +186,51 @@
         return;
       }
 
-      const formatDate = (date) => {
-        if (!date) return '';
-        const d = new Date(date);
-        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      };
-
-      grid.innerHTML = modules.map(m => {
-        const isLive = !!m.active_version;
-        const isDev = !!m.has_dev_bundle;
+      grid.innerHTML = list.map(m => {
+        const isActive = !!m.active_version;
+        const statusColor = isActive ? 'text-green-400 bg-green-500/10 border-green-500/20' : 'text-slate-400 bg-slate-800 border-slate-700';
         
-        let statusLabel = 'No Release';
-        let statusClass = 'bg-slate-500/10 text-slate-500 border-slate-500/20';
-        
-        if (isLive) {
-          statusLabel = 'Live';
-          statusClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
-        }
-
         return `
-          <div class="glass p-8 rounded-[2.5rem] hover:bg-white/10 transition-all group relative overflow-hidden">
-             <div class="absolute top-0 right-0 p-8 flex flex-col items-end gap-2 text-right">
-                <div class="flex flex-col items-end">
-                  <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border ${statusClass}">${statusLabel}</span>
-                  ${isLive ? `<span class="text-[9px] text-slate-500 mt-1 uppercase font-semibold">${formatDate(m.last_prod_update)}</span>` : ''}
-                </div>
-                ${isDev ? `
-                  <div class="flex flex-col items-end">
-                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border bg-cyan-500/10 text-cyan-400 border-cyan-500/20">Cloud Dev</span>
-                    <span class="text-[9px] text-cyan-500/60 mt-1 uppercase font-semibold">${formatDate(m.last_dev_update)}</span>
-                  </div>
-                ` : ''}
-             </div>
-             <div class="w-14 h-14 bg-indigo-500/10 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                <i data-lucide="package" class="text-indigo-400"></i>
-             </div>
-             <h3 class="text-2xl font-bold mb-2 text-white">${m.name}</h3>
-             <p class="text-slate-500 font-mono text-xs mb-6">${m.id}</p>
-             
-             <div class="flex items-center justify-between mt-8">
-                <div class="text-xs text-slate-400">
-                  Version: <span class="font-bold text-slate-200">${m.active_version || 'None'}</span>
-                </div>
-                <a href="/module.html?id=${m.id}" class="w-10 h-10 glass rounded-xl flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
-                  <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                </a>
-             </div>
-          </div>
+          <a href="/module.html?id=${m.id}" class="module-card surface border block rounded-2xl p-6 group">
+            <div class="flex justify-between items-start mb-6">
+              <div class="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center border border-indigo-500/20">
+                <i data-lucide="package" class="text-indigo-400 w-6 h-6 group-hover:scale-110 transition-transform"></i>
+              </div>
+              <span class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md border ${statusColor}">
+                ${isActive ? 'v' + m.active_version : 'Inactive'}
+              </span>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-1 truncate">${m.name}</h3>
+            <p class="text-sm font-mono text-slate-500 truncate mb-4">${m.id}</p>
+            <div class="flex gap-2">
+               ${m.has_dev_bundle ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Cloud Dev</span>` : ''}
+               <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-slate-800 text-slate-400 border border-slate-700">${m.versions_count} versions</span>
+            </div>
+          </a>
         `;
       }).join('');
       lucide.createIcons();
     }
-
-    document.getElementById('search-input').addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      const filtered = allModules.filter(m => 
-        m.name.toLowerCase().includes(term) || 
-        m.id.toLowerCase().includes(term)
-      );
-      renderModules(filtered);
-    });
 
     document.getElementById('create-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const id = document.getElementById('mod-id').value;
       const name = document.getElementById('mod-name').value;
       
-      const res = await fetch('/api/admin/modules', {
+      const res = await Auth.fetch('/api/admin/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, name })
       });
       
+      if (res.status === 401 || res.status === 403) { Auth.handleUnauthorized(); return; }
       if (res.ok) {
         closeModal();
         e.target.reset();
         fetchModules();
       } else {
         const data = await res.json();
-        alert(data.error);
+        await UI.alert(data.error || 'Failed to create module');
       }
     });
 

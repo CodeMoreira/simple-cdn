@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flux Registry | Sign In</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/auth.js"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .gradient-bg { background: radial-gradient(ellipse at top, #312e81 0%, #0f172a 60%); }
+    .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.1); }
+    .input-field {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 1rem;
+      padding: 0.9rem 1.25rem;
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.25); }
+    .input-field::placeholder { color: #475569; }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .floating { animation: float 4s ease-in-out infinite; }
+  </style>
+</head>
+<body class="gradient-bg text-slate-100 min-h-screen flex items-center justify-center p-6">
+
+  <!-- Background glows -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl"></div>
+  </div>
+
+  <div class="w-full max-w-md z-10">
+
+    <!-- Logo -->
+    <div class="text-center mb-10 floating">
+      <div class="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-5 shadow-2xl shadow-indigo-600/40">
+        <i data-lucide="layers" class="text-white w-10 h-10"></i>
+      </div>
+      <h1 class="text-3xl font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></h1>
+      <p class="text-slate-400 mt-2 text-sm">Secure access to your Super App ecosystem</p>
+    </div>
+
+    <!-- Session expired alert -->
+    <div id="expired-alert" class="hidden mb-6 flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-amber-400 text-sm">
+      <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0"></i>
+      <span>Your session expired. Please sign in again.</span>
+    </div>
+
+    <!-- Card -->
+    <div class="glass p-10 rounded-[2.5rem]">
+      <h2 class="text-xl font-bold mb-1">Welcome back</h2>
+      <p class="text-slate-400 text-sm mb-8">Sign in with your username and password</p>
+
+      <form id="login-form" class="space-y-5">
+
+        <!-- Username -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Username</label>
+          <input type="text" id="username-input" class="input-field"
+                 placeholder="admin" autocomplete="username" required>
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Password</label>
+          <div class="relative">
+            <input type="password" id="password-input" class="input-field pr-12"
+                   placeholder="••••••••••" autocomplete="current-password" required>
+            <button type="button" id="toggle-visibility"
+                    class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200 transition-colors">
+              <i data-lucide="eye" id="eye-icon" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember me -->
+        <label class="flex items-center gap-3 cursor-pointer group select-none">
+          <div class="relative">
+            <input type="checkbox" id="remember-me" class="sr-only peer">
+            <div class="w-11 h-6 bg-white/10 rounded-full peer-checked:bg-indigo-600 transition-colors border border-white/10"></div>
+            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+          </div>
+          <span class="text-sm text-slate-400 group-hover:text-slate-200 transition-colors">Stay signed in</span>
+        </label>
+
+        <!-- Error -->
+        <div id="error-msg" class="hidden flex items-center gap-2 text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+          <i data-lucide="x-circle" class="w-4 h-4 flex-shrink-0"></i>
+          <span id="error-text">Invalid credentials. Please try again.</span>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" id="submit-btn"
+                class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-6 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 mt-6">
+          <span id="btn-label">Sign In</span>
+          <div id="btn-spinner" class="hidden w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <i data-lucide="arrow-right" id="btn-icon" class="w-5 h-5"></i>
+        </button>
+
+      </form>
+
+      <!-- Divider -->
+      <div class="flex items-center gap-4 my-8">
+        <div class="flex-1 h-px bg-white/5"></div>
+        <span class="text-xs text-slate-600 uppercase tracking-wider">Automated environments</span>
+        <div class="flex-1 h-px bg-white/5"></div>
+      </div>
+
+      <p class="text-center text-xs text-slate-500 leading-relaxed">
+        For CI/CD pipelines &amp; CLI usage, use the <strong class="text-slate-300">API Token</strong>
+        from your profile page instead.<br>
+        <span class="text-amber-400/80">⚠ Tokens are restricted to deploy actions only.</span>
+      </p>
+    </div>
+
+    <p class="text-center text-slate-600 text-xs mt-8">
+      Contact your admin if you need access · <a href="#" class="text-indigo-400 hover:underline">Get help</a>
+    </p>
+  </div>
+
+  <script>
+    lucide.createIcons();
+
+    // Already authenticated? Redirect back.
+    if (Auth.getToken()) {
+      const params = new URLSearchParams(window.location.search);
+      window.location.href = params.get('redirect') || '/';
+    }
+
+    // Session expired banner
+    if (new URLSearchParams(window.location.search).get('expired')) {
+      document.getElementById('expired-alert').classList.remove('hidden');
+    }
+
+    // Password visibility toggle
+    const passwordInput = document.getElementById('password-input');
+    const eyeIcon = document.getElementById('eye-icon');
+    document.getElementById('toggle-visibility').addEventListener('click', () => {
+      const isHidden = passwordInput.type === 'password';
+      passwordInput.type = isHidden ? 'text' : 'password';
+      eyeIcon.setAttribute('data-lucide', isHidden ? 'eye-off' : 'eye');
+      lucide.createIcons();
+    });
+
+    // Login via username + password → POST /auth/login
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username-input').value.trim();
+      const password = document.getElementById('password-input').value;
+      const remember = document.getElementById('remember-me').checked;
+      const errorDiv = document.getElementById('error-msg');
+      const submitBtn = document.getElementById('submit-btn');
+      const btnLabel = document.getElementById('btn-label');
+      const btnSpinner = document.getElementById('btn-spinner');
+      const btnIcon = document.getElementById('btn-icon');
+
+      // Loading state
+      errorDiv.classList.add('hidden');
+      submitBtn.disabled = true;
+      btnLabel.textContent = 'Signing in…';
+      btnSpinner.classList.remove('hidden');
+      btnIcon.classList.add('hidden');
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          Auth.save(data.token, data.user, remember);
+          const params = new URLSearchParams(window.location.search);
+          window.location.href = params.get('redirect') || '/';
+        } else {
+          throw new Error(data.error || 'Invalid credentials.');
+        }
+      } catch (err) {
+        document.getElementById('error-text').textContent = err.message;
+        errorDiv.classList.remove('hidden');
+        submitBtn.disabled = false;
+        btnLabel.textContent = 'Sign In';
+        btnSpinner.classList.add('hidden');
+        btnIcon.classList.remove('hidden');
+        lucide.createIcons();
+      }
+    });
+  </script>
+</body>
+</html>

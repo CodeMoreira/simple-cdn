@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flux Registry | My Profile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/auth.js"></script>
+  <script src="/ui.js"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; }
+    
+    .surface { background-color: #0f172a; border: 1px solid #1e293b; }
+    .surface-elevated { background-color: #1e293b; border: 1px solid #334155; }
+    
+    .input-field { 
+      width: 100%; background-color: #020617; border: 1px solid #1e293b; border-radius: 0.5rem; 
+      padding: 0.625rem 0.875rem; color: #f8fafc; font-size: 0.875rem; transition: all 150ms ease-out; 
+    }
+    .input-field:focus { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); outline: none; }
+    .input-field::placeholder { color: #64748b; }
+
+    /* Badge system */
+    .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .badge-admin { background-color: #312e81; color: #818cf8; border: 1px solid #3730a3; }
+    .badge-deployer { background-color: #14532d; color: #4ade80; border: 1px solid #166534; }
+    .badge-viewer { background-color: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+  </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-64 surface h-full flex flex-col flex-shrink-0 z-10 transition-transform">
+    <div class="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+        <i data-lucide="layers" class="text-white w-5 h-5"></i>
+      </div>
+      <span class="text-lg font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></span>
+    </div>
+    
+    <div class="p-4 flex-1 flex flex-col gap-2">
+      <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Menu</div>
+      
+      <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+      </a>
+
+      <a href="/docs.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="book-open" class="w-4 h-4"></i> API Docs
+      </a>
+      
+      <a id="admin-link" href="/admin.html" class="hidden flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="shield" class="w-4 h-4"></i> Admin Center
+      </a>
+
+      <a href="/profile.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-400 font-medium text-sm">
+        <i data-lucide="user" class="w-4 h-4"></i> My Profile
+      </a>
+    </div>
+
+    <div class="p-4 border-t border-slate-800">
+      <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 h-full overflow-y-auto bg-slate-950 flex flex-col">
+    <!-- Header -->
+    <header class="h-16 border-b border-slate-800 flex items-center px-8 bg-slate-950/80 sticky top-0 z-10 backdrop-blur">
+      <h1 class="text-xl font-bold">My Profile</h1>
+    </header>
+
+    <div class="p-8 max-w-3xl mx-auto w-full space-y-8">
+      
+      <!-- User Card -->
+      <div class="surface p-6 rounded-2xl flex items-center gap-6">
+        <div class="w-16 h-16 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center flex-shrink-0">
+          <i data-lucide="user" class="text-slate-400 w-8 h-8"></i>
+        </div>
+        <div>
+          <h2 id="profile-username" class="text-2xl font-bold mb-1">Loading...</h2>
+          <p id="profile-role"></p>
+        </div>
+      </div>
+
+      <!-- Change Password -->
+      <div class="surface p-8 rounded-2xl">
+        <div class="flex items-center gap-3 mb-6 border-b border-slate-800 pb-4">
+          <i data-lucide="lock" class="w-5 h-5 text-indigo-400"></i>
+          <h3 class="text-lg font-bold">Security</h3>
+        </div>
+        <form id="password-form" class="space-y-4 max-w-md">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Current Password</label>
+            <input type="password" id="current-pass" class="input-field" placeholder="••••••••" required>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">New Password <span class="lowercase font-normal ml-2">(min. 8 chars, 1 uppercase, 1 symbol)</span></label>
+            <input type="password" id="new-pass" class="input-field" placeholder="••••••••" required>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Confirm New Password</label>
+            <input type="password" id="confirm-pass" class="input-field" placeholder="••••••••" required>
+          </div>
+          <div id="pass-msg" class="hidden text-sm rounded-lg p-3"></div>
+          <div class="pt-2">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2.5 rounded-lg font-bold transition-all shadow-lg shadow-indigo-600/20">
+              Update Password
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- API Token -->
+      <div class="surface p-8 rounded-2xl">
+        <div class="flex items-center gap-3 mb-6 border-b border-slate-800 pb-4">
+          <i data-lucide="key" class="w-5 h-5 text-amber-400"></i>
+          <h3 class="text-lg font-bold">CLI Auth Token</h3>
+        </div>
+        
+        <div class="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-6 flex gap-3 text-sm text-amber-500">
+          <i data-lucide="alert-triangle" class="w-5 h-5 flex-shrink-0"></i>
+          <p>Tokens are restricted to <strong>deploy actions only</strong>. Critical operations require your web session.</p>
+        </div>
+
+        <div class="bg-black/50 rounded-lg border border-slate-800 p-4 mb-4 flex items-center gap-4">
+          <code id="token-display" class="flex-1 text-sm text-slate-300 font-mono break-all select-all">Loading...</code>
+          <button onclick="copyToken()" title="Copy" class="flex-shrink-0 p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white border border-slate-800">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <div id="token-msg" class="hidden text-sm rounded-lg p-3 mb-4"></div>
+
+        <button onclick="regenerateToken()" class="flex items-center gap-2 border border-amber-500/30 hover:bg-amber-500/10 text-amber-500 px-5 py-2.5 rounded-lg text-sm font-bold transition-all">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i> Regenerate Token
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    if (!Auth.requireAuth()) throw new Error('redirect');
+    lucide.createIcons();
+
+    const user = Auth.getUser();
+    let currentToken = null;
+
+    function handleLogout() { Auth.clear(); window.location.href = '/login.html'; }
+
+    if (user?.role === 'admin') {
+      document.getElementById('admin-link').classList.remove('hidden');
+    }
+
+    async function loadProfile() {
+      const me = await Auth.fetch('/auth/me').then(r => r.json());
+      document.getElementById('profile-username').textContent = me.username;
+      const roleMap = { admin: 'badge-admin', deployer: 'badge-deployer', viewer: 'badge-viewer' };
+      document.getElementById('profile-role').innerHTML = `<span class="badge ${roleMap[me.role] || ''}">${me.role}</span>`;
+    }
+
+    async function loadToken() {
+      const data = await Auth.fetch('/api/profile/token').then(r => r.json());
+      currentToken = data.token;
+      document.getElementById('token-display').textContent = data.token;
+    }
+
+    function copyToken() {
+      if (currentToken) {
+        navigator.clipboard.writeText(currentToken);
+        showMsg('token-msg', 'success', 'Token copied to clipboard!');
+      }
+    }
+
+    async function regenerateToken() {
+      if (!(await UI.confirm('Regenerate your API token? The old token will stop working immediately.'))) return;
+      const res = await Auth.fetch('/api/profile/token/regenerate', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        currentToken = data.token;
+        document.getElementById('token-display').textContent = data.token;
+        showMsg('token-msg', 'success', 'Token regenerated successfully.');
+      } else {
+        showMsg('token-msg', 'error', data.error);
+      }
+    }
+
+    document.getElementById('password-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const currentPassword = document.getElementById('current-pass').value;
+      const newPassword = document.getElementById('new-pass').value;
+      const confirmPassword = document.getElementById('confirm-pass').value;
+
+      if (newPassword !== confirmPassword) {
+        return showMsg('pass-msg', 'error', 'New passwords do not match.');
+      }
+
+      const res = await Auth.fetch('/api/profile/password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showMsg('pass-msg', 'success', data.message);
+        e.target.reset();
+      } else {
+        showMsg('pass-msg', 'error', data.error);
+      }
+    });
+
+    function showMsg(id, type, msg) {
+      const el = document.getElementById(id);
+      el.classList.remove('hidden', 'bg-green-500/10', 'text-green-500', 'border-green-500/20',
+                          'bg-red-500/10', 'text-red-400', 'border-red-500/20', 'border');
+      if (type === 'success') {
+        el.classList.add('bg-green-500/10', 'text-green-500', 'border', 'border-green-500/20');
+      } else {
+        el.classList.add('bg-red-500/10', 'text-red-400', 'border', 'border-red-500/20');
+      }
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    loadProfile();
+    loadToken();
+  </script>
+</body>
+</html>
