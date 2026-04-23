@@ -7,29 +7,92 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/auth.js"></script>
+  <script src="/ui.js"></script>
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    .gradient-bg { background: radial-gradient(circle at top left, #4f46e5, #0f172a 40%), #0f172a; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; }
+    
+    .surface { background-color: #0f172a; border: 1px solid #1e293b; }
+    .surface-elevated { background-color: #1e293b; border: 1px solid #334155; }
+    
+    .input-field { 
+      width: 100%; background-color: #020617; border: 1px solid #1e293b; border-radius: 0.5rem; 
+      padding: 0.625rem 0.875rem; color: #f8fafc; font-size: 0.875rem; transition: all 150ms ease-out; 
+    }
   </style>
 </head>
-<body class="gradient-bg text-slate-100 min-h-screen pb-20">
-  <nav class="p-6">
-    <div class="container mx-auto flex justify-between items-center glass rounded-3xl px-8 py-4">
-      <a href="/" class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center">
-          <i data-lucide="arrow-left" class="text-white"></i>
-        </div>
-        <span class="text-xl font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></span>
+<body class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-64 surface h-full flex flex-col flex-shrink-0 z-10 transition-transform">
+    <div class="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+        <i data-lucide="layers" class="text-white w-5 h-5"></i>
+      </div>
+      <span class="text-lg font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></span>
+    </div>
+    
+    <div class="p-4 flex-1 flex flex-col gap-2">
+      <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Menu</div>
+      
+      <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-400 font-medium text-sm">
+        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+      </a>
+      
+      <a href="/modules" target="_blank" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="server" class="w-4 h-4"></i> Consumer API
+      </a>
+
+      <a href="/docs.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="book-open" class="w-4 h-4"></i> API Docs
+      </a>
+
+      <a id="admin-link" href="/admin.html" class="hidden flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="shield" class="w-4 h-4"></i> Admin Center
+      </a>
+
+      <a href="/profile.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
+        <i data-lucide="user" class="w-4 h-4"></i> My Profile
       </a>
     </div>
-  </nav>
 
-  <main class="container mx-auto mt-12 px-6 max-w-5xl" id="module-content">
-     <div class="text-center py-20"><p class="text-slate-500 animate-pulse">Loading module details...</p></div>
+    <div class="p-4 border-t border-slate-800">
+      <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium">
+        <i data-lucide="log-out" class="w-4 h-4"></i> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 h-full overflow-y-auto bg-slate-950 flex flex-col">
+    <header class="h-16 border-b border-slate-800 flex items-center px-8 bg-slate-950/80 sticky top-0 z-10 backdrop-blur">
+      <div class="flex items-center gap-4">
+        <a href="/" class="p-2 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </a>
+        <h1 class="text-xl font-bold">Asset Details</h1>
+      </div>
+    </header>
+
+    <div class="p-8 max-w-5xl mx-auto w-full" id="module-content">
+       <div class="text-center py-20"><p class="text-slate-500 animate-pulse">Loading module details...</p></div>
+    </div>
   </main>
 
   <script>
+    if (!Auth.requireAuth()) { throw new Error('Redirecting to login'); }
+    lucide.createIcons();
+
+    const _currentUser = Auth.getUser();
+    if (_currentUser?.role === 'admin') {
+      document.getElementById('admin-link').classList.remove('hidden');
+    }
+
+    function handleLogout() {
+      Auth.clear();
+      window.location.href = '/login.html';
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const modId = urlParams.get('id');
 
@@ -39,137 +102,289 @@
       return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    let m_production_version = null;
+
     async function loadModule() {
       const main = document.getElementById('module-content');
       try {
-        const res = await fetch('/api/admin/modules');
+        const res = await Auth.fetch('/api/admin/modules');
+        if (res.status === 401 || res.status === 403) { Auth.handleUnauthorized(); return; }
+        loadHistory();
         const modules = await res.json();
         const m = modules.find(x => x.id === modId);
         
         if (!m) {
-          main.innerHTML = `<p class="text-center text-red-400">Asset not found.</p>`;
+          main.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl text-center"><p class="text-red-400 font-medium">Asset not found.</p><a href="/" class="text-indigo-400 text-sm mt-2 inline-block">Return to Dashboard</a></div>`;
           return;
         }
 
+        const activeVersion = m.production_version || m.staging_version || m.dev_version;
+        m_production_version = m.production_version;
+
         main.innerHTML = `
-          <div class="flex flex-col md:flex-row gap-8 mb-12">
-            <div class="flex-1 glass p-10 rounded-[2.5rem]">
-               <div class="flex items-center gap-4 mb-8">
-                  <div class="w-16 h-16 bg-indigo-500/10 rounded-3xl flex items-center justify-center">
-                    <i data-lucide="package" class="text-indigo-400 w-8 h-8"></i>
+          <div class="flex flex-col gap-8 mb-12">
+            <!-- Header panel -->
+            <div class="surface p-8 rounded-2xl flex justify-between items-center flex-wrap gap-4">
+               <div class="flex items-center gap-5">
+                  <div class="w-14 h-14 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="package" class="text-indigo-400 w-7 h-7"></i>
                   </div>
                   <div>
-                    <h2 class="text-3xl font-bold">${m.name}</h2>
-                    <p class="text-slate-500 font-mono text-sm">${m.id}</p>
+                    <h2 class="text-2xl font-bold text-white mb-1">${m.name}</h2>
+                    <p class="text-slate-500 font-mono text-xs bg-black px-2 py-1 inline-block rounded">${m.id}</p>
                   </div>
                </div>
                
-               <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-                  <div class="bg-white/5 p-6 rounded-3xl border border-white/5 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="check-circle" class="w-12 h-12"></i></div>
-                    <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Live Production</span>
-                    <span class="text-2xl font-bold block mb-1">v${m.active_version || 'None'}</span>
-                    <span class="text-[10px] text-slate-500 uppercase font-semibold">Last released: ${formatDate(m.last_prod_update)}</span>
-                  </div>
-                  <div class="bg-white/5 p-6 rounded-3xl border border-white/5 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 p-4 opacity-10"><i data-lucide="cloud" class="w-12 h-12"></i></div>
-                    <span class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Total Versions</span>
-                    <span class="text-2xl font-bold block mb-1">${m.versions.length}</span>
-                    <span class="text-[10px] text-slate-500 uppercase font-semibold">Immutable releases</span>
-                  </div>
-               </div>
-               
-               <div class="pt-8 border-t border-white/5">
-                  <button onclick="deleteModule()" class="bg-red-500/10 hover:bg-red-500/20 text-red-500 px-6 py-3 rounded-2xl text-xs font-bold transition-all border border-red-500/20 flex items-center gap-2">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i> Delete Module
-                  </button>
+               <div class="flex gap-4 items-center">
+                 <div class="text-right">
+                   <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Versions</p>
+                   <p class="text-xl font-bold text-white">${m.versions_count || 0}</p>
+                 </div>
+                 
+                 ${_currentUser?.role === 'admin' ? `
+                   <button onclick="deleteModule()" class="ml-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-4 py-2 rounded-lg text-sm font-bold transition-all border border-red-500/20 flex items-center gap-2">
+                     <i data-lucide="trash-2" class="w-4 h-4"></i> Delete
+                   </button>
+                 ` : ''}
                </div>
             </div>
 
-            <div class="w-full md:w-96 glass p-8 rounded-[2.5rem] flex flex-col gap-6">
-               <h3 class="text-xl font-bold flex items-center gap-2"><i data-lucide="cloud-lightning" class="text-cyan-400 w-5 h-5"></i> Cloud Dev Slot</h3>
-               <p class="text-xs text-slate-500 leading-relaxed">Active development track. Automatically updated via <code>esad dev</code>.</p>
+            <!-- Pipeline Slots -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                
-               <div class="p-6 bg-white/5 rounded-3xl border border-white/5">
-                  <div class="flex items-center justify-between mb-4">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Status</span>
-                    <span class="px-3 py-1 rounded-full text-[10px] font-bold ${m.has_dev_bundle ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/20' : 'bg-slate-700/20 text-slate-500'}">
+               <!-- Cloud Dev Slot -->
+               <div class="surface p-6 rounded-2xl flex flex-col gap-4 relative overflow-hidden group">
+                  <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity"><i data-lucide="cloud-lightning" class="w-32 h-32 text-cyan-400"></i></div>
+                  <h3 class="text-lg font-bold flex items-center gap-2 text-white relative z-10">
+                    <i data-lucide="cloud-lightning" class="text-cyan-400 w-5 h-5"></i> Development
+                  </h3>
+                  <div class="flex items-center gap-2 mb-2 relative z-10">
+                    <span class="px-2.5 py-1 rounded text-[10px] font-bold ${m.has_dev_bundle ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'bg-slate-800 text-slate-400'}">
                       ${m.has_dev_bundle ? 'ACTIVE' : 'IDLE'}
                     </span>
                   </div>
-                  
-                  <div class="flex flex-col gap-1">
-                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Last Sync</span>
-                    <span class="text-sm font-bold text-slate-200">${formatDate(m.last_dev_update)}</span>
+                  <div class="mt-auto relative z-10">
+                    ${m.has_dev_bundle ? `
+                      <p class="text-[10px] font-bold text-slate-500 uppercase mb-2">Dev URL</p>
+                      <div class="bg-black p-2 rounded border border-slate-800 font-mono text-[10px] break-all text-slate-400 select-all cursor-pointer hover:border-slate-600 transition-colors">
+                        ${m.dev_url}
+                      </div>
+                    ` : `<p class="text-xs text-slate-500 mt-4">Push a dev bundle to spin up this module remotely.</p>`}
                   </div>
                </div>
 
-               ${m.has_dev_bundle ? `
-                  <div class="animate-in fade-in slide-in-from-bottom-2 space-y-4">
-                    <div>
-                      <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Runtime URL</label>
-                      <div class="bg-black/20 p-4 rounded-2xl border border-white/5 font-mono text-[10px] break-all text-slate-400 select-all cursor-pointer">
-                        ${m.dev_url}
-                      </div>
-                    </div>
+               <!-- Staging Slot -->
+               <div class="surface p-6 rounded-2xl flex flex-col gap-4 relative overflow-hidden group">
+                  <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity"><i data-lucide="layers" class="w-32 h-32 text-amber-400"></i></div>
+                  <h3 class="text-lg font-bold flex items-center gap-2 text-white relative z-10">
+                    <i data-lucide="layers" class="text-amber-400 w-5 h-5"></i> Staging
+                  </h3>
+                  <div class="flex items-center gap-2 mb-2 relative z-10">
+                    <span class="px-2.5 py-1 rounded text-[10px] font-bold ${m.staging_version ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-slate-800 text-slate-400'}">
+                      ${m.staging_version ? 'v' + m.staging_version : 'EMPTY'}
+                    </span>
                   </div>
-               ` : ''}
+                  <div class="mt-auto relative z-10">
+                    ${_currentUser?.role === 'admin' ? `
+                      <button onclick="promoteStaging()" class="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-2 rounded-lg transition-colors border border-slate-700">Promote Dev to Staging</button>
+                    ` : '<p class="text-xs text-slate-500 mt-4">Only admins can promote to Staging.</p>'}
+                  </div>
+               </div>
+
+               <!-- Production Slot -->
+               <div class="surface p-6 rounded-2xl flex flex-col gap-4 relative overflow-hidden group border-indigo-500/30">
+                  <div class="absolute -right-4 -top-4 opacity-5 group-hover:opacity-10 transition-opacity"><i data-lucide="check-circle" class="w-32 h-32 text-indigo-400"></i></div>
+                  <h3 class="text-lg font-bold flex items-center gap-2 text-white relative z-10">
+                    <i data-lucide="check-circle" class="text-indigo-400 w-5 h-5"></i> Production
+                  </h3>
+                  <div class="flex items-center gap-2 mb-2 relative z-10">
+                    <span class="px-2.5 py-1 rounded text-[10px] font-bold ${m.production_version ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' : 'bg-slate-800 text-slate-400'}">
+                      ${m.production_version ? 'v' + m.production_version : 'EMPTY'}
+                    </span>
+                  </div>
+                  <div class="mt-auto relative z-10">
+                    ${_currentUser?.role === 'admin' ? `
+                      <button onclick="promoteProduction()" class="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 rounded-lg transition-colors shadow-lg shadow-indigo-600/20">Publish to Prod</button>
+                    ` : '<p class="text-xs text-slate-500 mt-4">Only admins can publish to Production.</p>'}
+                  </div>
+               </div>
+
             </div>
+          </div>
+
+          <!-- Version History -->
+          <div class="mt-8 surface p-8 rounded-2xl flex flex-col mb-12">
+             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                  <i data-lucide="history" class="w-5 h-5 text-indigo-400"></i> Version History
+                </h3>
+                <div class="flex items-center bg-black border border-slate-800 rounded-lg px-3 py-2 w-full max-w-xs focus-within:border-indigo-500 transition-colors">
+                  <i data-lucide="search" class="w-4 h-4 text-slate-500 mr-2 flex-shrink-0"></i>
+                  <input type="text" id="history-filter" placeholder="Search release name..." class="bg-transparent text-sm text-white focus:outline-none w-full" oninput="filterHistory()">
+                </div>
+             </div>
+             <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                  <thead>
+                    <tr class="border-b border-slate-800 text-xs font-bold text-slate-500 uppercase tracking-widest hover:bg-transparent">
+                      <th class="py-4 pr-6 w-32">Version</th>
+                      <th class="py-4 pr-6">Name</th>
+                      <th class="py-4 pr-6 w-48">Published</th>
+                      <th class="py-4 text-right w-40">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="history-tbody" class="text-sm">
+                     <!-- Rendered by JS -->
+                  </tbody>
+                </table>
+             </div>
+             <!-- Pagination -->
+             <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-800">
+                <p class="text-xs text-slate-500 font-medium" id="history-page-info">Showing 0 of 0</p>
+                <div class="flex gap-2">
+                  <button onclick="prevPage()" class="p-2 border border-slate-800 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                  <button onclick="nextPage()" class="p-2 border border-slate-800 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                </div>
+             </div>
           </div>
         `;
         lucide.createIcons();
+        loadHistory();
       } catch (err) {
-        main.innerHTML = `<p class="text-center text-red-400">Error loading details.</p>`;
+        console.error(err);
+        main.innerHTML = `<div class="bg-red-500/10 border border-red-500/20 p-6 rounded-2xl text-center"><p class="text-red-400 font-medium">Error loading details.</p><p class="text-xs text-red-500/80 mt-1">${err.message}</p></div>`;
       }
     }
 
-    async function setActive(version) {
-      await fetch(`/api/admin/modules/${modId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active_version: version })
-      });
-      loadModule();
+    // --- HISTORY TABLE LOGIC ---
+    let allVersions = [];
+    let filteredVersions = [];
+    let currentPage = 1;
+    const PAGE_SIZE = 5;
+
+    async function loadHistory() {
+      try {
+        const res = await Auth.fetch(`/api/admin/modules/${modId}/versions`);
+        if (res.ok) {
+          allVersions = await res.json();
+          filterHistory();
+        }
+      } catch (err) { console.error('Failed to load history', err); }
     }
 
-    async function handleUpload(input) {
-      const file = input.files[0];
-      if (!file) return;
+    function filterHistory() {
+      const q = document.getElementById('history-filter')?.value.toLowerCase() || '';
+      filteredVersions = allVersions.filter(v => (v.name || '').toLowerCase().includes(q) || v.version_number.includes(q));
+      currentPage = 1;
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const tbody = document.getElementById('history-tbody');
+      const info = document.getElementById('history-page-info');
+      if (!tbody) return;
+
+      const total = filteredVersions.length;
+      if (total === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-slate-500 text-sm">No versions found.</td></tr>`;
+        info.textContent = `Showing 0 of 0`;
+        return;
+      }
+
+      const maxPage = Math.ceil(total / PAGE_SIZE);
+      if (currentPage < 1) currentPage = 1;
+      if (currentPage > maxPage) currentPage = maxPage;
+
+      const start = (currentPage - 1) * PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      const slice = filteredVersions.slice(start, end);
+
+      info.textContent = `Showing ${start + 1}-${Math.min(end, total)} of ${total}`;
+
+      tbody.innerHTML = slice.map(v => {
+        const isActive = (m_production_version === v.version_number);
+        return `
+          <tr class="border-b border-slate-900 hover:bg-slate-900/50 transition-colors group">
+            <td class="py-4 pr-6"><span class="font-mono text-cyan-400 font-bold bg-cyan-500/10 px-2 py-1 rounded">v${v.version_number}</span></td>
+            <td class="py-4 pr-6 font-medium text-slate-200">${v.name || '<span class="text-slate-500 italic">Unnamed</span>'}</td>
+            <td class="py-4 pr-6 text-slate-500 text-xs">${formatDate(v.created_at)}</td>
+            <td class="py-4 text-right">
+              ${isActive ? 
+                `<span class="text-xs font-bold text-indigo-400 uppercase tracking-wide flex items-center justify-end gap-1"><i data-lucide="check" class="w-3 h-3"></i> Active</span>` : 
+                `<button onclick="activateVersion('${v.version_number}')" class="text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all opacity-0 group-hover:opacity-100">Activate Rollback</button>`
+              }
+            </td>
+          </tr>
+        `;
+      }).join('');
       
-      const version = prompt("Enter version number (e.g. 1.0.0):");
-      if (!version) return;
+      if (window.lucide) window.lucide.createIcons();
+    }
 
-      const formData = new FormData();
-      formData.append('bundle', file);
-      formData.append('version', version);
+    function prevPage() { if (currentPage > 1) { currentPage--; renderHistory(); } }
+    function nextPage() { if (currentPage * PAGE_SIZE < filteredVersions.length) { currentPage++; renderHistory(); } }
 
-      try {
-        const res = await fetch(`/api/admin/modules/${modId}/versions`, {
-          method: 'POST',
-          body: formData
-        });
-        if (res.ok) {
-          loadModule();
-        } else {
-          const d = await res.json();
-          alert(d.error);
-        }
-      } catch (err) {
-        alert("Upload failed.");
+    async function activateVersion(version) {
+      if (!(await UI.confirm(`Are you sure you want to rollback production to version ${version}?`))) return;
+      
+      const res = await Auth.fetch(`/api/admin/modules/${modId}/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version })
+      });
+      if (res.ok) {
+        loadModule();
+      } else {
+        const d = await res.json();
+        await UI.alert(d.error || 'Activation failed.');
+      }
+    }
+
+    // --- PROMOTION LOGIC ---
+    async function promoteStaging() {
+      const res = await Auth.fetch(`/api/admin/modules/${modId}/promote/staging`, { method: 'POST' });
+      if (res.status === 401 || res.status === 403) { Auth.handleUnauthorized(); return; }
+      if (res.ok) {
+        loadModule();
+      } else {
+        const d = await res.json();
+        await UI.alert(d.error || 'Promotion to staging failed.');
+      }
+    }
+
+    async function promoteProduction() {
+      if (!UI.promptDeploy) return await UI.alert('Update your scripts, missing promptDeploy.');
+      const result = await UI.promptDeploy();
+      if (!result) return;
+      
+      const { version, name } = result;
+      const res = await Auth.fetch(`/api/admin/modules/${modId}/promote/production`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version, name })
+      });
+      if (res.status === 401 || res.status === 403) { Auth.handleUnauthorized(); return; }
+      if (res.ok) {
+        loadModule();
+      } else {
+        const d = await res.json();
+        await UI.alert(d.error || 'Deployment failed.');
       }
     }
 
     async function deleteModule() {
-      if (!confirm(`Are you sure you want to delete the module "${modId}"? This will remove the registry entry AND all files on the CDN. This cannot be undone.`)) return;
+      if (!(await UI.confirm(`Are you sure you want to delete the module "${modId}"? This will remove the registry entry AND all files on the CDN. This cannot be undone.`))) return;
       
-      const res = await fetch(`/api/admin/modules/${modId}`, { method: 'DELETE' });
+      const res = await Auth.fetch(`/api/admin/modules/${modId}`, { method: 'DELETE' });
+      if (res.status === 401 || res.status === 403) { Auth.handleUnauthorized(); return; }
       if (res.ok) {
         window.location.href = '/';
       } else {
-        alert("Delete failed.");
+        await UI.alert("Delete failed.");
       }
     }
 
+    // Trigger load
     loadModule();
   </script>
 </body>
