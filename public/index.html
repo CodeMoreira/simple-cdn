@@ -200,8 +200,8 @@
                 ${isActive ? 'v' + m.active_version : 'Inactive'}
               </span>
             </div>
-            <h3 class="text-lg font-bold text-white mb-1 truncate">${m.name}</h3>
-            <p class="text-sm font-mono text-slate-500 truncate mb-4">${m.id}</p>
+            <h3 class="text-lg font-bold text-white mb-1 truncate">${UI.escapeHTML(m.name)}</h3>
+            <p class="text-sm font-mono text-slate-500 truncate mb-4">${UI.escapeHTML(m.id)}</p>
             <div class="flex gap-2">
                ${m.has_dev_bundle ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Cloud Dev</span>` : ''}
                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-slate-800 text-slate-400 border border-slate-700">${m.versions_count} versions</span>

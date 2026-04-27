@@ -1,9 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs-extra');
 const multer = require('multer');
-const AdmZip = require('adm-zip');
+const extract = require('extract-zip');
 const { verifyPassword, generateSessionToken } = require('./src/crypto');
 
 const app = express();
@@ -24,7 +27,15 @@ const db = require('./src/db');
   }
 });
 
-app.use(cors());
+app.use(helmet());
+app.use(cookieParser());
+app.use(cors({ origin: true, credentials: true }));
+
+const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, message: { error: 'Too many requests' } });
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 15, skipSuccessfulRequests: true });
+
+app.use('/api', globalLimiter);
+app.use('/auth', globalLimiter);
 app.use(express.json());
 app.use('/cdn', express.static(CDN_DIR));
 app.use(express.static(PUBLIC_DIR));
@@ -52,7 +63,7 @@ const hasPermission = (userRole, requiredRole) => {
  * or user-management operations (enforced at the route level via `sessionOnly`).
  */
 const authenticate = (requiredRole) => (req, res, next) => {
-  const sessionToken = req.headers['x-session-token'] || req.headers['authorization']?.split(' ')[1];
+  const sessionToken = req.cookies?.esad_cdn_session || req.headers['x-session-token'] || req.headers['authorization']?.split(' ')[1];
 
   if (!sessionToken) {
     return res.status(401).json({ error: 'Unauthorized: Missing credentials' });
@@ -105,7 +116,7 @@ const sessionOnly = (req, res, next) => {
  * POST /auth/login
  * Authenticates with username + password. Returns a session token.
  */
-app.post('/auth/login', (req, res) => {
+app.post('/auth/login', authLimiter, (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
@@ -122,8 +133,14 @@ app.post('/auth/login', (req, res) => {
   db.prepare('INSERT INTO audit_logs (user_id, action, details) VALUES (?, ?, ?)')
     .run(user.id, 'LOGIN', `Web login from ${req.ip}`);
 
+  res.cookie('esad_cdn_session', token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  });
+
   res.json({
-    token,
     user: { id: user.id, username: user.username, role: user.role }
   });
 });
@@ -134,9 +151,9 @@ app.post('/auth/login', (req, res) => {
  */
 app.post('/auth/logout', authenticate(), (req, res) => {
   if (req.authMethod === 'session') {
-    const token = req.headers['authorization']?.split(' ')[1] ||
-                  req.headers['x-session-token'];
+    const token = req.cookies?.esad_cdn_session || req.headers['authorization']?.split(' ')[1] || req.headers['x-session-token'];
     db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+    res.clearCookie('esad_cdn_session');
   }
   res.json({ message: 'Signed out successfully.' });
 });
@@ -349,7 +366,7 @@ app.post('/api/admin/modules/:id/activate', authenticate('admin'), (req, res) =>
 /**
  * ADMIN API: Upload Development Bundle (Cloud-Dev Sync)
  */
-app.post('/api/admin/modules/:id/dev', authenticate('deployer'), upload.single('bundle'), (req, res) => {
+app.post('/api/admin/modules/:id/dev', authenticate('deployer'), upload.single('bundle'), async (req, res) => {
   const { id } = req.params;
   
   if (!req.file) return res.status(400).json({ error: 'Missing bundle file' });
@@ -362,9 +379,7 @@ app.post('/api/admin/modules/:id/dev', authenticate('deployer'), upload.single('
     if (fs.existsSync(devPath)) fs.removeSync(devPath);
     fs.ensureDirSync(devPath);
     
-    const zip = new AdmZip(req.file.path);
-    zip.extractAllTo(devPath, true);
-    fs.unlinkSync(req.file.path);
+    await extract(req.file.path, { dir: devPath });
     
     // Update module record to reflect that there is a dev version
     db.prepare('UPDATE modules SET dev_version = ? WHERE id = ?').run('dev', id);
@@ -372,13 +387,17 @@ app.post('/api/admin/modules/:id/dev', authenticate('deployer'), upload.single('
     res.json({ message: 'Dev bundle updated', id });
   } catch (err) {
     res.status(500).json({ error: 'Failed to process dev bundle: ' + err.message });
+  } finally {
+    if (req.file && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch(e) {}
+    }
   }
 });
 
 /**
  * ADMIN API: Upload Bundle Version (Deploy)
  */
-app.post('/api/admin/modules/:id/versions', authenticate('deployer'), upload.single('bundle'), (req, res) => {
+app.post('/api/admin/modules/:id/versions', authenticate('deployer'), upload.single('bundle'), async (req, res) => {
   const { id } = req.params;
   const { version } = req.body;
   
@@ -391,9 +410,7 @@ app.post('/api/admin/modules/:id/versions', authenticate('deployer'), upload.sin
     const extractPath = path.join(CDN_DIR, id, version);
     fs.ensureDirSync(extractPath);
     
-    const zip = new AdmZip(req.file.path);
-    zip.extractAllTo(extractPath, true);
-    fs.unlinkSync(req.file.path);
+    await extract(req.file.path, { dir: extractPath });
     
     // Register version in DB
     db.prepare('INSERT OR IGNORE INTO versions (module_id, version_number) VALUES (?, ?)')
@@ -408,6 +425,10 @@ app.post('/api/admin/modules/:id/versions', authenticate('deployer'), upload.sin
     res.json({ id, version, status: 'uploaded' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to process bundle: ' + err.message });
+  } finally {
+    if (req.file && fs.existsSync(req.file.path)) {
+      try { fs.unlinkSync(req.file.path); } catch(e) {}
+    }
   }
 });
 

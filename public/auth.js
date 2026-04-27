@@ -10,8 +10,8 @@
 const AUTH_KEY = 'esad_cdn_session';
 
 const Auth = {
-  getToken() {
-    return sessionStorage.getItem(AUTH_KEY) || localStorage.getItem(AUTH_KEY);
+  isAuthenticated() {
+    return !!this.getUser();
   },
 
   getUser() {
@@ -21,9 +21,8 @@ const Auth = {
     } catch { return null; }
   },
 
-  save(token, user, remember = false) {
+  save(user, remember = false) {
     const store = remember ? localStorage : sessionStorage;
-    store.setItem(AUTH_KEY, token);
     store.setItem(AUTH_KEY + '_user', JSON.stringify(user));
   },
 
@@ -34,23 +33,20 @@ const Auth = {
     });
   },
 
-  /** Redirects to /login.html if there is no token, then returns false. */
   requireAuth() {
-    if (!this.getToken()) {
+    if (!this.isAuthenticated()) {
       window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
       return false;
     }
     return true;
   },
 
-  /** Wraps fetch with Authorization header automatically. */
   async fetch(url, options = {}) {
-    const token = this.getToken();
     const res = await fetch(url, {
       ...options,
+      credentials: 'include',
       headers: {
         ...(options.headers || {}),
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       },
     });
     if (res.status === 401 || res.status === 403) {

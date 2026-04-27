@@ -130,7 +130,7 @@
     lucide.createIcons();
 
     // Already authenticated? Redirect back.
-    if (Auth.getToken()) {
+    if (Auth.isAuthenticated()) {
       const params = new URLSearchParams(window.location.search);
       window.location.href = params.get('redirect') || '/';
     }
@@ -179,7 +179,7 @@
         const data = await res.json();
 
         if (res.ok) {
-          Auth.save(data.token, data.user, remember);
+          Auth.save(data.user, remember);
           const params = new URLSearchParams(window.location.search);
           window.location.href = params.get('redirect') || '/';
         } else {

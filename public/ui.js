@@ -1,4 +1,10 @@
 window.UI = {
+  escapeHTML: (str) => {
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>'"]/g, tag => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    }[tag]));
+  },
   _createOverlay: () => {
     const overlay = document.createElement('div');
     overlay.className = 'fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-6 opacity-0 transition-opacity duration-200';
@@ -18,7 +24,7 @@ window.UI = {
            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-white">
              <i data-lucide="bell" class="w-5 h-5 text-indigo-400"></i> Registry Note
            </h3>
-           <p class="text-slate-400 mb-8 whitespace-pre-wrap">${message}</p>
+           <p class="text-slate-400 mb-8 whitespace-pre-wrap">${UI.escapeHTML(message)}</p>
            <button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-600/20" id="ui-ok-btn">Understood</button>
         </div>
       `;
@@ -38,7 +44,7 @@ window.UI = {
            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-amber-500">
              <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500"></i> Action Required
            </h3>
-           <p class="text-slate-400 mb-8 whitespace-pre-wrap">${message}</p>
+           <p class="text-slate-400 mb-8 whitespace-pre-wrap">${UI.escapeHTML(message)}</p>
            <div class="flex gap-3">
               <button class="flex-1 py-3 rounded-xl font-bold border border-slate-700 hover:bg-slate-800 transition-colors text-white" id="ui-cancel-btn">Cancel</button>
               <button class="flex-1 bg-amber-500 hover:bg-amber-400 text-slate-900 py-3 rounded-xl font-bold transition-all shadow-lg shadow-amber-500/20" id="ui-ok-btn">Confirm</button>
@@ -61,7 +67,7 @@ window.UI = {
            <h3 class="text-xl font-bold mb-4 text-white flex items-center gap-2">
              <i data-lucide="edit-3" class="w-5 h-5 text-indigo-400"></i> Input Required
            </h3>
-           <p class="text-slate-400 mb-4 whitespace-pre-wrap text-sm">${message}</p>
+           <p class="text-slate-400 mb-4 whitespace-pre-wrap text-sm">${UI.escapeHTML(message)}</p>
            <input type="text" id="ui-prompt-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white mb-8 focus:border-indigo-500 focus:outline-none" value="${defaultVal}">
            <div class="flex gap-3">
               <button class="flex-1 py-3 rounded-xl font-bold border border-slate-700 hover:bg-slate-800 transition-colors text-white" id="ui-cancel-btn">Cancel</button>
