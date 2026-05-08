@@ -1,6 +1,7 @@
 node_modules/
 cdn/
 temp/
+uploads/
 registry.json
 .DS_Store
 *.log
