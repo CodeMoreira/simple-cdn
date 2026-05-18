@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="/auth.js"></script>
-  <script src="/ui.js"></script>
+  <script src="/ui.js?v=2"></script>
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; }
     
@@ -29,45 +29,8 @@
 </head>
 <body class="flex h-screen overflow-hidden">
 
-  <!-- Sidebar -->
-  <aside class="w-64 surface h-full flex flex-col flex-shrink-0 z-10">
-    <div class="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
-      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-        <i data-lucide="layers" class="text-white w-5 h-5"></i>
-      </div>
-      <span class="text-lg font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></span>
-    </div>
-    
-    <div class="p-4 flex-1 flex flex-col gap-2">
-      <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Menu</div>
-      
-      <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-400 font-medium text-sm">
-        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
-      </a>
-      
-      <a href="/modules" target="_blank" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
-        <i data-lucide="server" class="w-4 h-4"></i> Consumer API
-      </a>
-
-      <a href="/docs.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
-        <i data-lucide="book-open" class="w-4 h-4"></i> API Docs
-      </a>
-
-      <a id="admin-link" href="/admin.html" class="hidden flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
-        <i data-lucide="shield" class="w-4 h-4"></i> Admin Center
-      </a>
-
-      <a href="/profile.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
-        <i data-lucide="user" class="w-4 h-4"></i> My Profile
-      </a>
-    </div>
-
-    <div class="p-4 border-t border-slate-800">
-      <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium">
-        <i data-lucide="log-out" class="w-4 h-4"></i> Sign out
-      </button>
-    </div>
-  </aside>
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
 
   <!-- Main Content -->
   <main class="flex-1 h-full overflow-y-auto bg-slate-950 flex flex-col">
@@ -134,20 +97,18 @@
 
   <script>
     if (!Auth.requireAuth()) { throw new Error('Redirecting to login'); }
+    // Redirect pure 'user' role to login — they only consume modules via the App
+    if (!Auth.requireRole('dev')) { throw new Error('Redirecting'); }
     lucide.createIcons();
 
     const _currentUser = Auth.getUser();
-    if (_currentUser?.role === 'admin') {
-      document.getElementById('admin-link').classList.remove('hidden');
-    }
-    if (_currentUser?.role === 'viewer') {
+    
+    document.getElementById('sidebar-container').outerHTML = UI.renderSidebar('dashboard');
+
+    // Hide Create Asset button for roles below manager
+    if (!Auth.hasRole('manager')) {
       const btn = document.querySelector('button[onclick="openModal()"]');
       if (btn) btn.classList.add('hidden');
-    }
-
-    function handleLogout() {
-      Auth.clear();
-      window.location.href = '/login.html';
     }
 
     function openModal() { document.getElementById('modal').classList.remove('hidden'); }

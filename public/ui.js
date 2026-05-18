@@ -126,5 +126,62 @@ window.UI = {
       };
       overlay.querySelector('#ui-ok-btn').onclick = ok;
     });
+  },
+  handleLogout: () => {
+    Auth.clear();
+    window.location.href = '/login.html';
+  },
+  renderSidebar: (activePage) => {
+    const isManager = typeof Auth !== 'undefined' && Auth.hasRole ? Auth.hasRole('manager') : false;
+    const linkClass = (page) => activePage === page 
+      ? 'flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-400 font-medium text-sm'
+      : 'flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium';
+
+    const sidebarHTML = `
+      <aside class="w-64 surface h-full flex flex-col flex-shrink-0 z-10 transition-transform">
+        <div class="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
+          <div class="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
+            <i data-lucide="layers" class="text-white w-5 h-5 md:w-6 md:h-6"></i>
+          </div>
+          <span class="text-lg font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></span>
+        </div>
+        
+        <div class="p-4 flex-1 flex flex-col gap-2">
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Menu</div>
+          
+          <a href="/" class="${linkClass('dashboard')}">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+          </a>
+          
+          <a href="/modules" target="_blank" class="${linkClass('consumer')}">
+            <i data-lucide="server" class="w-4 h-4"></i> Consumer API
+          </a>
+
+          <a href="/docs.html" class="${linkClass('docs')}">
+            <i data-lucide="book-open" class="w-4 h-4"></i> API Docs
+          </a>
+
+          ${isManager ? `
+          <a href="/admin.html" class="${linkClass('admin')}">
+            <i data-lucide="shield" class="w-4 h-4"></i> Admin Center
+          </a>
+          <a href="/security.html" class="${linkClass('security')}">
+            <i data-lucide="shield-alert" class="w-4 h-4"></i> Security & Logs
+          </a>
+          ` : ''}
+
+          <a href="/profile.html" class="${linkClass('profile')}">
+            <i data-lucide="user" class="w-4 h-4"></i> My Profile
+          </a>
+        </div>
+
+        <div class="p-4 border-t border-slate-800">
+          <button onclick="UI.handleLogout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium">
+            <i data-lucide="log-out" class="w-4 h-4"></i> Sign out
+          </button>
+        </div>
+      </aside>
+    `;
+    return sidebarHTML;
   }
 };

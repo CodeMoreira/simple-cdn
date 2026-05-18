@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flux Registry - Security & Logs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              950: '#030712',
+              900: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #030712;
+      color: #f8fafc;
+    }
+    .surface {
+      background-color: #0f172a;
+      border: 1px solid #1e293b;
+    }
+    .input-field {
+      background-color: #030712;
+      border: 1px solid #1e293b;
+      color: #f8fafc;
+      width: 100%;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      transition: all 150ms ease-out;
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: #4f46e5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border-radius: 0.375rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .action-LOGIN { background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+    .action-CREATE { background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .action-DELETE { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+    .action-PASSWORD { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+    .action-UPLOAD { background: rgba(139, 92, 246, 0.1); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.2); }
+    
+    .terminal {
+      background-color: #030712;
+      border: 1px solid #dc2626; /* Red glow border for system errors */
+      border-radius: 0.75rem;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .terminal-header {
+      background-color: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .terminal-body {
+      padding: 1.25rem;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 0.825rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .terminal-row {
+      border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+      padding-bottom: 0.75rem;
+    }
+    .terminal-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+  </style>
+  <script src="/auth.js?v=2"></script>
+  <script src="/ui.js?v=2"></script>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <!-- Header -->
+    <header class="h-16 border-b border-slate-800 flex items-center justify-between px-8 flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <i data-lucide="shield-alert" class="w-6 h-6 text-indigo-400"></i>
+        <h1 class="text-xl font-bold tracking-tight">Security & Logs</h1>
+      </div>
+    </header>
+
+    <div class="flex-1 p-8 space-y-8 max-w-7xl w-full mx-auto">
+      
+      <!-- Telemetry Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+        <!-- Active Users Card -->
+        <div class="surface p-6 rounded-2xl shadow-xl flex items-center justify-between relative overflow-hidden">
+          <div class="space-y-2">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Active Users</span>
+            <div class="flex flex-col">
+              <span id="active-users-display" class="text-2xl font-bold text-sky-400 leading-none">--</span>
+              <span class="text-[10px] text-slate-500 mt-1">Token expires in 24h</span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-sky-500/10 border border-sky-500/20 rounded-xl flex items-center justify-center text-sky-400 flex-shrink-0">
+            <i data-lucide="users" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <!-- Memory Allocation Card -->
+        <div class="surface p-6 rounded-2xl shadow-xl flex items-center justify-between relative overflow-hidden">
+          <div class="space-y-2 w-full pr-2">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Memory (Heap V8)</span>
+            <div class="flex flex-col">
+              <span id="memory-usage-display" class="text-xl font-bold text-indigo-400 leading-none">-- MB</span>
+              <span id="memory-limit-display" class="text-[10px] text-slate-500 mt-1">/ -- MB max</span>
+              <!-- Premium Progress Bar -->
+              <div class="w-full bg-slate-950 rounded-full h-1.5 mt-2 border border-slate-800/50 overflow-hidden">
+                <div id="memory-progress" class="bg-indigo-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center justify-center text-indigo-400 flex-shrink-0">
+            <i data-lucide="cpu" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <!-- CDN Storage Card -->
+        <div class="surface p-6 rounded-2xl shadow-xl flex items-center justify-between relative overflow-hidden">
+          <div class="space-y-2">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">CDN Storage</span>
+            <div class="flex flex-col">
+              <span id="cdn-space-display" class="text-2xl font-bold text-violet-400 leading-none">-- MB</span>
+              <span class="text-[10px] text-slate-500 mt-1">Static & remote assets</span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-violet-500/10 border border-violet-500/20 rounded-xl flex items-center justify-center text-violet-400 flex-shrink-0">
+            <i data-lucide="hard-drive" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+        <!-- Security Threat Metrics Card -->
+        <div class="surface p-6 rounded-2xl shadow-xl flex items-center justify-between relative overflow-hidden">
+          <div class="space-y-2">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Threat Metrics (24h)</span>
+            <div class="flex flex-col gap-1">
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span class="text-slate-400 text-[10px] uppercase font-semibold">Failed:</span>
+                <span id="failed-logins-display" class="font-bold text-amber-400 font-mono">--</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                <span class="text-slate-400 text-[10px] uppercase font-semibold">Blocks:</span>
+                <span id="rate-blocks-display" class="font-bold text-red-400 font-mono">--</span>
+              </div>
+              <div class="flex items-center gap-1.5 text-xs">
+                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                <span class="text-slate-400 text-[10px] uppercase font-semibold">Critical:</span>
+                <span id="critical-ops-display" class="font-bold text-cyan-400 font-mono">--</span>
+              </div>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-center text-amber-400 flex-shrink-0">
+            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Audit Log Section -->
+      <section>
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold">Security Audit Log</h2>
+            <p class="text-sm text-slate-400 mt-1">Track user activities across the registry.</p>
+          </div>
+        </div>
+
+        <div class="surface rounded-xl overflow-hidden shadow-xl">
+          <!-- Filters -->
+          <div class="p-4 border-b border-slate-800 bg-slate-900/50 flex flex-wrap gap-4 items-end">
+            <div class="w-full sm:w-auto flex-1 md:flex-none">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 pl-1">Username</label>
+              <div class="relative min-w-[200px]">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"></i>
+                <input type="text" id="audit-username" class="input-field pl-9" placeholder="Search user..." onkeyup="debounceLoadAudit()">
+              </div>
+            </div>
+            <div class="w-full sm:w-auto flex-1 md:flex-none">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 pl-1">Action Type</label>
+              <select id="audit-action" class="input-field min-w-[200px]" onchange="loadAudit()">
+                <option value="">All Actions</option>
+                <option value="LOGIN">LOGIN</option>
+                <option value="UPLOAD_VERSION">UPLOAD_VERSION</option>
+                <option value="CREATE_USER">CREATE_USER</option>
+                <option value="DELETE_USER">DELETE_USER</option>
+                <option value="CHANGE_ROLE">CHANGE_ROLE</option>
+                <option value="PASSWORD_RESET">PASSWORD_RESET</option>
+                <option value="TOKEN_REGENERATED">TOKEN_REGENERATED</option>
+              </select>
+            </div>
+            <div class="w-full sm:w-auto">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 pl-1">Start Date</label>
+              <input type="date" id="audit-start" class="input-field" onchange="loadAudit()">
+            </div>
+            <div class="w-full sm:w-auto">
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 pl-1">End Date</label>
+              <input type="date" id="audit-end" class="input-field" onchange="loadAudit()">
+            </div>
+            <button onclick="clearAuditFilters()" class="text-sm font-semibold text-slate-400 hover:text-white transition-colors h-10 px-3">
+              Clear
+            </button>
+            <div class="ml-auto">
+              <button onclick="loadAudit()" class="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-lg transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="audit-list" class="divide-y divide-slate-800 max-h-[500px] overflow-y-auto">
+             <div class="text-center py-10 text-slate-500">Loading audit log...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- System Errors Section (Restricted to Master+) -->
+      <section id="system-errors-section" class="hidden">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold flex items-center gap-2 text-red-400">
+              <i data-lucide="bug" class="w-6 h-6"></i> System Errors
+            </h2>
+            <p class="text-sm text-slate-400 mt-1">Application crash reports and unhandled exceptions.</p>
+          </div>
+        </div>
+
+        <div class="terminal shadow-lg">
+          <div class="terminal-header">
+            <div class="flex gap-2 mr-4">
+              <div class="w-3 h-3 rounded-full bg-red-500"></div>
+              <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            </div>
+            <span class="text-slate-500 text-xs">/var/log/flux/error.log</span>
+            <button onclick="loadErrors()" class="ml-auto text-slate-500 hover:text-white"><i data-lucide="refresh-cw" class="w-3 h-3"></i></button>
+          </div>
+          <div id="error-list" class="terminal-body">
+            <div class="text-slate-600 animate-pulse">Tail connected... Waiting for logs...</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script>
+    if (!Auth.requireAuth()) throw new Error('redirect');
+    if (!Auth.requireRole('manager')) throw new Error('redirect');
+    lucide.createIcons();
+
+    document.getElementById('sidebar-container').outerHTML = UI.renderSidebar('security');
+
+    // Show system errors only for master+
+    const isMaster = Auth.hasRole('master');
+    if (isMaster) {
+      document.getElementById('system-errors-section').classList.remove('hidden');
+    }
+
+    // Pagination State
+    const ITEMS_PER_PAGE = 5;
+    let currentPage = { audit: 1, errors: 1 };
+    let allAudit = [];
+    let allErrors = [];
+
+    function renderPagination(totalItems, currentPageNum, pageKey) {
+      if (totalItems <= ITEMS_PER_PAGE) return '';
+      const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+      const isFirst = currentPageNum === 1;
+      const isLast = currentPageNum === totalPages;
+      
+      return `
+        <div class="flex items-center justify-between px-6 py-3 bg-slate-900/50 border-t border-slate-800">
+          <span class="text-xs text-slate-500">Page ${currentPageNum} of ${totalPages}</span>
+          <div class="flex gap-2">
+            <button onclick="changePage('${pageKey}', -1)" ${isFirst ? 'disabled' : ''} class="px-3 py-1 text-xs font-semibold rounded-md border border-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-slate-300">Prev</button>
+            <button onclick="changePage('${pageKey}', 1)" ${isLast ? 'disabled' : ''} class="px-3 py-1 text-xs font-semibold rounded-md border border-slate-700 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-slate-300">Next</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function changePage(pageKey, delta) {
+      currentPage[pageKey] += delta;
+      if (pageKey === 'audit') renderAuditList();
+      else if (pageKey === 'errors') renderErrorsList();
+    }
+
+    // ── Telemetry Health ──────────────────────────────────────────────────────
+    async function loadTelemetry() {
+      const res = await Auth.fetch('/api/admin/health');
+      if (!res.ok) return;
+      const data = await res.json();
+      
+      // Update Active Users ratio (active in last 24h / total)
+      document.getElementById('active-users-display').textContent = `${data.activeUsers}/${data.userCount}`;
+      
+      // RAM Metrics
+      const usedMB = (data.memory.heapUsed / 1024 / 1024).toFixed(1);
+      const limitMB = (data.memory.heapLimit / 1024 / 1024).toFixed(0);
+      const percent = Math.min((data.memory.heapUsed / data.memory.heapLimit) * 100, 100).toFixed(1);
+      
+      document.getElementById('memory-usage-display').textContent = `${usedMB} MB`;
+      document.getElementById('memory-limit-display').textContent = `/ ${limitMB} MB max (${percent}%)`;
+      document.getElementById('memory-progress').style.width = `${percent}%`;
+      
+      // CDN Space Used
+      const spaceMB = (data.cdnSize / 1024 / 1024).toFixed(2);
+      document.getElementById('cdn-space-display').textContent = `${spaceMB} MB`;
+      
+      // Security threat metrics
+      document.getElementById('failed-logins-display').textContent = data.securityMetrics.failedLogins24h;
+      document.getElementById('rate-blocks-display').textContent = data.securityMetrics.rateLimitBlocks24h;
+      document.getElementById('critical-ops-display').textContent = data.securityMetrics.criticalOps24h;
+    }
+
+    // ── Audit Log ──────────────────────────────────────────────────────────────
+    let auditSearchTimeout;
+    
+    function debounceLoadAudit() {
+      clearTimeout(auditSearchTimeout);
+      auditSearchTimeout = setTimeout(loadAudit, 300);
+    }
+
+    function clearAuditFilters() {
+      document.getElementById('audit-username').value = '';
+      document.getElementById('audit-action').value = '';
+      document.getElementById('audit-start').value = '';
+      document.getElementById('audit-end').value = '';
+      loadAudit();
+    }
+
+    async function loadAudit() {
+      const username = document.getElementById('audit-username').value;
+      const action = document.getElementById('audit-action').value;
+      const start = document.getElementById('audit-start').value;
+      const end = document.getElementById('audit-end').value;
+
+      const query = new URLSearchParams({ limit: 50 });
+      if (username) query.append('username', username);
+      if (action) query.append('action', action);
+      if (start) query.append('startDate', start);
+      if (end) query.append('endDate', end);
+
+      const res = await Auth.fetch('/api/admin/audit?' + query.toString());
+      allAudit = await res.json();
+      currentPage.audit = 1;
+      renderAuditList();
+    }
+
+    function renderAuditList() {
+      const list = document.getElementById('audit-list');
+
+      if (!allAudit || !allAudit.length) {
+        list.innerHTML = '<p class="text-slate-500 text-center py-10">No audit events match filters.</p>';
+        return;
+      }
+
+      const fmt = (ts) => ts ? new Date(ts).toLocaleString() : '—';
+      const actionClass = (a) => {
+        if (/LOGIN/.test(a)) return 'action-LOGIN';
+        if (/CREATE/.test(a)) return 'action-CREATE';
+        if (/DELETE/.test(a)) return 'action-DELETE';
+        if (/PASSWORD/.test(a)) return 'action-PASSWORD';
+        if (/UPLOAD/.test(a)) return 'action-UPLOAD';
+        return 'surface-elevated text-slate-300';
+      };
+
+      const startPage = (currentPage.audit - 1) * ITEMS_PER_PAGE;
+      const paginated = allAudit.slice(startPage, startPage + ITEMS_PER_PAGE);
+
+      const html = paginated.map(l => `
+        <div class="flex items-start sm:items-center gap-4 px-6 py-4 hover:bg-slate-800/20 transition-colors">
+          <span class="px-2.5 py-1 rounded-md text-[10px] font-bold tracking-wider uppercase ${actionClass(l.action)} min-w-[120px] text-center border border-white/5">
+            ${l.action.replace(/_/g, ' ')}
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-slate-300">${l.details ? UI.escapeHTML(l.details) : '—'}</p>
+            <div class="flex gap-3 text-xs text-slate-500 mt-1">
+              <span><i data-lucide="user" class="inline w-3 h-3 mr-1"></i>${l.username ? UI.escapeHTML(l.username) : 'system'}</span>
+              <span><i data-lucide="clock" class="inline w-3 h-3 mr-1"></i>${fmt(l.timestamp)}</span>
+              ${l.module_id ? `<span><i data-lucide="package" class="inline w-3 h-3 mr-1"></i>${UI.escapeHTML(l.module_id)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+      list.innerHTML = html + renderPagination(allAudit.length, currentPage.audit, 'audit');
+      lucide.createIcons();
+    }
+
+    // ── Error Logs ─────────────────────────────────────────────────────────────
+    async function loadErrors() {
+      const res = await Auth.fetch('/api/admin/errors?limit=30');
+      allErrors = await res.json();
+      currentPage.errors = 1;
+      renderErrorsList();
+    }
+
+    function renderErrorsList() {
+      const list = document.getElementById('error-list');
+
+      if (!allErrors || !allErrors.length) {
+        list.innerHTML = '<div class="text-green-500">✔ No system errors found. Logs are clean.</div>';
+        return;
+      }
+
+      const startPage = (currentPage.errors - 1) * ITEMS_PER_PAGE;
+      const paginated = allErrors.slice(startPage, startPage + ITEMS_PER_PAGE);
+
+      const html = paginated.map(l => `
+        <div class="terminal-row">
+          <div class="text-slate-500 mb-1">[${new Date(l.timestamp).toISOString()}] <span class="text-cyan-400">route=${l.route ? UI.escapeHTML(l.route) : 'unknown'}</span></div>
+          <div class="text-red-400 font-bold mb-1">Error: ${UI.escapeHTML(l.message)}</div>
+          ${l.stack ? `<div class="text-slate-500 whitespace-pre-wrap ml-4 opacity-80 border-l border-slate-700 pl-3">${UI.escapeHTML(l.stack).substring(0,300)}...</div>` : ''}
+        </div>
+      `).join('');
+      
+      list.innerHTML = html + renderPagination(allErrors.length, currentPage.errors, 'errors');
+    }
+
+    // Initial Load
+    loadTelemetry();
+    loadAudit();
+    if (isMaster) {
+      loadErrors();
+    }
+
+    // Refresh telemetry and errors periodically (every 10 seconds)
+    setInterval(() => {
+      loadTelemetry();
+      if (isMaster) loadErrors();
+    }, 10000);
+  </script>
+</body>
+</html>

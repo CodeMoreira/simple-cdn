@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flux Registry | API Documentation</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="/auth.js"></script>
+  <script src="/ui.js?v=2"></script>
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #f8fafc; }
+    body { font-family: 'Outfit', sans-serif; background-color: #030712; color: #f8fafc; }
     
     .surface { background-color: #0f172a; border: 1px solid #1e293b; }
     .surface-elevated { background-color: #1e293b; border: 1px solid #334155; }
@@ -31,41 +32,8 @@
 </head>
 <body class="flex h-screen overflow-hidden">
 
-  <!-- Sidebar -->
-  <aside class="w-64 surface h-full flex flex-col flex-shrink-0 z-10">
-    <div class="h-16 flex items-center px-6 border-b border-slate-800 gap-3">
-      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-        <i data-lucide="layers" class="text-white w-5 h-5"></i>
-      </div>
-      <span class="text-lg font-bold tracking-tight">Flux <span class="text-indigo-400">Registry</span></span>
-    </div>
-    
-    <div class="p-4 flex-1 flex flex-col gap-2">
-      <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Menu</div>
-      
-      <a href="/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
-        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
-      </a>
-      
-      <a href="/docs.html" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-600/10 text-indigo-400 font-medium text-sm">
-        <i data-lucide="book-open" class="w-4 h-4"></i> API Docs
-      </a>
-
-      <a id="admin-link" href="/admin.html" class="hidden flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
-        <i data-lucide="shield" class="w-4 h-4"></i> Admin Center
-      </a>
-
-      <a href="/profile.html" class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors text-sm font-medium">
-        <i data-lucide="user" class="w-4 h-4"></i> My Profile
-      </a>
-    </div>
-
-    <div class="p-4 border-t border-slate-800">
-      <button onclick="handleLogout()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium">
-        <i data-lucide="log-out" class="w-4 h-4"></i> Sign out
-      </button>
-    </div>
-  </aside>
+  <!-- Sidebar Container -->
+  <div id="sidebar-container"></div>
 
   <!-- Main Content -->
   <main class="flex-1 h-full overflow-y-auto bg-slate-950 flex flex-col relative">
@@ -106,77 +74,70 @@
     lucide.createIcons();
 
     const _currentUser = Auth.getUser();
-    if (_currentUser?.role === 'admin') {
-      document.getElementById('admin-link').classList.remove('hidden');
-    }
+    
+    document.getElementById('sidebar-container').outerHTML = UI.renderSidebar('docs');
 
-    function handleLogout() {
-      Auth.clear();
-      window.location.href = '/login.html';
-    }
-
-    // Role Hierarchy
-    const roles = { admin: 3, deployer: 2, viewer: 1 };
-    const myLevel = roles[_currentUser.role] || 0;
+    // Filter endpoints based on user rank
+    const userRank = Auth.getRank();
 
     const allEndpoints = [
       {
         title: "Consumer API: Get Active Modules",
-        method: "GET", path: "/modules", level: 1,
+        method: "GET", path: "/modules", level: ROLE_RANK.user,
         desc: "Returns a list of all active versions for consumers resolving bundles.",
         body: null
       },
       {
         title: "Admin/Deploy: Dashboard Info",
-        method: "GET", path: "/api/admin/modules", level: 1,
+        method: "GET", path: "/api/admin/modules", level: ROLE_RANK.dev,
         desc: "Returns extended registry states and boolean flags indicative of developer slots (has_dev_bundle).",
         body: null
       },
       {
         title: "Admin/Deploy: Push Dev Bundle",
-        method: "POST", path: "/api/admin/modules/:id/dev", level: 2,
+        method: "POST", path: "/api/admin/modules/:id/dev", level: ROLE_RANK.dev,
         desc: "Upload a development bundle. Expects multipart/form-data with 'bundle' (file). Supports giant bundles up to 1GB natively.",
         body: "FormData: { bundle: File }"
       },
       {
         title: "Admin/Deploy: Push New Version",
-        method: "POST", path: "/api/admin/modules/:id/versions", level: 2,
+        method: "POST", path: "/api/admin/modules/:id/versions", level: ROLE_RANK.dev,
         desc: "Upload a new bundle as a specific version for the given module ID. Expects multipart/form-data with 'bundle' (file) and 'version' (string). Supports giant bundles up to 1GB natively.",
         body: "FormData: { bundle: File, version: '1.0.0' }"
       },
       {
         title: "Admin/Deploy: Get Module Versions History",
-        method: "GET", path: "/api/admin/modules/:id/versions", level: 1,
+        method: "GET", path: "/api/admin/modules/:id/versions", level: ROLE_RANK.dev,
         desc: "Return a chronological list of all semantic versions uploaded or published for an module namespace.",
         body: null
       },
       {
         title: "Admin: Register New Module namespace",
-        method: "POST", path: "/api/admin/modules", level: 3,
+        method: "POST", path: "/api/admin/modules", level: ROLE_RANK.manager,
         desc: "Registers a new namespace ID and Display name.",
         body: "{\n  \"id\": \"auth-remote\",\n  \"name\": \"Authentication App\"\n}"
       },
       {
         title: "Admin: Promote Dev to Staging",
-        method: "POST", path: "/api/admin/modules/:id/promote/staging", level: 3,
+        method: "POST", path: "/api/admin/modules/:id/promote/staging", level: ROLE_RANK.moderator,
         desc: "Directly promotes the current Development bundle to Staging without requiring a semantic version.",
         body: null
       },
       {
         title: "Admin: Publish Staging to Production",
-        method: "POST", path: "/api/admin/modules/:id/promote/production", level: 3,
+        method: "POST", path: "/api/admin/modules/:id/promote/production", level: ROLE_RANK.release_manager,
         desc: "Promote the current Staging bundle to an immutable Production release. Requires version number and release name.",
         body: "{\n  \"version\": \"1.0.0\",\n  \"name\": \"Initial Release\"\n}"
       },
       {
         title: "Admin: Rollback / Activate Version",
-        method: "POST", path: "/api/admin/modules/:id/activate", level: 3,
+        method: "POST", path: "/api/admin/modules/:id/activate", level: ROLE_RANK.release_manager,
         desc: "Forcefully rollbacks or activates a previously published immutable release to become the active production bundle.",
         body: "{\n  \"version\": \"1.0.0\"\n}"
       },
       {
         title: "Admin: Delete Module",
-        method: "DELETE", path: "/api/admin/modules/:id", level: 3,
+        method: "DELETE", path: "/api/admin/modules/:id", level: ROLE_RANK.manager,
         desc: "Permanently removes a module namespace and purges all of its uploaded static assets.",
         body: null
       }
@@ -184,7 +145,7 @@
 
     function renderEndpoints() {
       const container = document.getElementById('endpoints-container');
-      const visible = allEndpoints.filter(e => myLevel >= e.level);
+      const visible = allEndpoints.filter(e => userRank >= e.level);
 
       container.innerHTML = visible.map((e, index) => {
         const methodClass = 'method-' + e.method.toLowerCase();

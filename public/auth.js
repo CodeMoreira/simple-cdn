@@ -1,13 +1,12 @@
 /**
  * ESAD Simple-CDN — Auth Guard
  * Shared across all protected pages.
- *
- * Two auth modes (as per REQS_V2.md §5.2):
- *  - Session token: obtained via /auth/login (username + password) — full access
- *  - API token:     used in automated environments (CLI/CI) — deploy actions only
  */
 
 const AUTH_KEY = 'esad_cdn_session';
+
+/** Role hierarchy for UI masking decisions */
+const ROLE_RANK = { owner: 7, master: 6, manager: 5, release_manager: 4, moderator: 3, dev: 2, user: 1 };
 
 const Auth = {
   isAuthenticated() {
@@ -19,6 +18,15 @@ const Auth = {
       const raw = sessionStorage.getItem(AUTH_KEY + '_user') || localStorage.getItem(AUTH_KEY + '_user');
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
+  },
+
+  getRank() {
+    const user = this.getUser();
+    return user ? (ROLE_RANK[user.role] ?? 0) : 0;
+  },
+
+  hasRole(requiredRole) {
+    return this.getRank() >= (ROLE_RANK[requiredRole] ?? 99);
   },
 
   save(user, remember = false) {
@@ -41,6 +49,15 @@ const Auth = {
     return true;
   },
 
+  /** Require a minimum role to access the current page. Redirects to dashboard if insufficient. */
+  requireRole(role) {
+    if (!this.hasRole(role)) {
+      window.location.href = '/';
+      return false;
+    }
+    return true;
+  },
+
   async fetch(url, options = {}) {
     const res = await fetch(url, {
       ...options,
@@ -49,15 +66,16 @@ const Auth = {
         ...(options.headers || {}),
       },
     });
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401) {
       this.handleUnauthorized();
     }
     return res;
   },
 
-  /** Call on 401/403 responses to force re-login. */
+  /** Call on 401 responses to force re-login. */
   handleUnauthorized() {
     this.clear();
     window.location.href = '/login.html?expired=1';
   }
 };
+
